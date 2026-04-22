@@ -16,7 +16,6 @@ class Categoria(BaseModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     nombre: str = Field(
         sa_column=Column(String(100), unique=True, nullable=False),
-        index=True,
         description="Category name",
     )
     descripcion: Optional[str] = Field(

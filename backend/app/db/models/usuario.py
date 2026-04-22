@@ -27,7 +27,6 @@ class Rol(BaseModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     nombre: str = Field(
         sa_column=Column(String(50), unique=True, nullable=False),
-        index=True,
         description="Role name",
     )
     descripcion: Optional[str] = Field(
@@ -49,7 +48,6 @@ class Usuario(BaseModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     email: str = Field(
         sa_column=Column(String(255), unique=True, nullable=False),
-        index=True,
         description="User email address",
     )
     nombre: str = Field(

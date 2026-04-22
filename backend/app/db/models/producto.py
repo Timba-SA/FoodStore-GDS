@@ -34,7 +34,6 @@ class Producto(BaseModel, table=True):
     )
     sku: str = Field(
         sa_column=Column(String(100), unique=True, nullable=False),
-        index=True,
         description="Stock Keeping Unit",
     )
     imagen_url: Optional[str] = Field(
@@ -71,7 +70,6 @@ class Ingrediente(BaseModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     nombre: str = Field(
         sa_column=Column(String(100), unique=True, nullable=False),
-        index=True,
         description="Ingredient name",
     )
     descripcion: Optional[str] = Field(

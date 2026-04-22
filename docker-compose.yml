@@ -46,7 +46,7 @@ services:
     networks:
       - foodstore-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U foodstore"]
+      test: ["CMD-SHELL", "pg_isready -U foodstore -d foodstore_db"]
       interval: 5s
       timeout: 5s
       retries: 5

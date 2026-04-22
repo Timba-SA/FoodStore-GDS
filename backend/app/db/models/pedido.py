@@ -40,7 +40,6 @@ class FormaPago(BaseModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     nombre: str = Field(
         sa_column=Column(String(50), unique=True, nullable=False),
-        index=True,
         description="Payment method name",
     )
     descripcion: Optional[str] = Field(
@@ -66,7 +65,6 @@ class EstadoPedido(BaseModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     nombre: str = Field(
         sa_column=Column(String(50), unique=True, nullable=False),
-        index=True,
         description="Status name",
     )
     descripcion: Optional[str] = Field(
@@ -99,7 +97,6 @@ class Pedido(BaseModel, table=True):
     )
     numero_pedido: str = Field(
         sa_column=Column(String(50), unique=True, nullable=False),
-        index=True,
         description="Order number",
     )
     subtotal: Decimal = Field(
@@ -257,9 +254,9 @@ class Pago(BaseModel, table=True):
         sa_column=Column(String(50), nullable=False),
         description="Payment status",
     )
-    metadata: Optional[str] = Field(
+    metadata_pago: Optional[str] = Field(
         default=None,
-        sa_column=Column(Text),
+        sa_column=Column("metadata", Text),
         description="JSON metadata from payment provider",
     )
 

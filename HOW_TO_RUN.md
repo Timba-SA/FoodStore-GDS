@@ -82,6 +82,31 @@ npm run dev
 
 ---
 
+## 4. Desarrollo con Docker (Stack Completo)
+
+Si prefieres levantar todo el stack (backend, frontend y base de datos) usando Docker:
+
+```bash
+# 1. Asegúrate de tener Docker Desktop corriendo
+
+# 2. Levanta todo el stack en segundo plano
+docker-compose up -d
+
+# 3. Verifica que los servicios estén arriba
+docker-compose ps
+```
+
+*   **Backend**: `http://localhost:8000`
+*   **Frontend**: `http://localhost:5173`
+*   **Base de datos**: `localhost:5433` (Postgres)
+
+Para detener los servicios:
+```bash
+docker-compose down
+```
+
+---
+
 ## 🛠 Comandos Útiles
 
 ### Backend

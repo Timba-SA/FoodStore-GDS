@@ -27,60 +27,107 @@ Estos documentos son la fuente de verdad del sistema. El agente los lee antes de
 
 ## Setup del entorno de desarrollo
 
+### ✅ Requisitos completados en Sprint 0 (us-000-setup)
+
+La infraestructura base ya está configurada:
+
+- ✅ **Backend**: FastAPI configurado con SQLModel, Alembic migrations, y estructura modular
+- ✅ **Frontend**: React + TypeScript + Vite con FSD (Feature-Sliced Design)
+- ✅ **Base de datos**: 17 tablas normalizadas (3NF) con soft-delete y audit trail
+- ✅ **Migrations**: Alembic setup con migración inicial que crea todo el schema
+- ✅ **Seed script**: Datos iniciales (roles, estados, métodos de pago, usuario admin)
+- ✅ **Documentation**: CONTRIBUTING.md con guías completas de setup y desarrollo
+
 ### Requisitos previos
+
 - Python 3.11+
 - Node.js 18+
 - PostgreSQL 15+
-- Claude Code: `npm install -g @anthropic-ai/claude-code`
-- OpenSpec CLI: `npm install -g @fission-ai/openspec`
 
-### 1. Clonar e inicializar
+### 1. Configurar la base de datos PostgreSQL
 
 ```bash
-git clone <url-del-repo> food-store
-cd food-store
+# Crear la base de datos
+createdb foodstore_db
+
+# O mediante psql
+psql -U postgres
+CREATE DATABASE foodstore_db;
+\q
 ```
 
-### 2. Inicializar OpenSpec
-
-```bash
-npx @fission-ai/openspec@latest init
-```
-
-Esto genera la carpeta `openspec/` donde van a vivir todos los artefactos del proyecto.
-
-### 3. Backend
+### 2. Backend - Setup rápido
 
 ```bash
 cd backend
+
+# Copiar variables de entorno
 cp .env.example .env
-# Completar las variables de entorno en .env
 
-python -m venv .venv
-source .venv/bin/activate   # Linux/Mac
-.venv\Scripts\activate      # Windows
+# Crear ambiente virtual
+python -m venv venv
 
+# Activar (Windows)
+venv\Scripts\activate
+# O en macOS/Linux
+source venv/bin/activate
+
+# Instalar dependencias
 pip install -r requirements.txt
-alembic upgrade head
+
+# Ejecutar migraciones
+python -m alembic upgrade head
+
+# Llenar datos iniciales
 python -m app.db.seed
-uvicorn app.main:app --reload
+
+# Iniciar servidor (http://localhost:8000)
+python -m app
 ```
 
-API disponible en `http://localhost:8000`  
-Documentación Swagger en `http://localhost:8000/docs`
+**Acceso a la API**:
+- API: http://localhost:8000
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+- Health check: http://localhost:8000/health
 
-### 4. Frontend
+### 3. Frontend - Setup rápido
 
 ```bash
 cd frontend
-cp .env.example .env
-# Completar VITE_API_URL=http://localhost:8000
 
+# Copiar variables de entorno
+cp .env.example .env
+
+# Instalar dependencias
 npm install
+
+# Iniciar servidor de desarrollo (http://localhost:5173)
 npm run dev
 ```
 
-App disponible en `http://localhost:5173`
+**Scripts disponibles**:
+```bash
+npm run dev              # Start dev server
+npm run build           # Build for production
+npm run preview         # Preview production build
+npm run lint            # Run ESLint
+npm run type-check      # Type checking with TypeScript
+npm run format          # Format code with Prettier
+```
+
+---
+
+### ✅ Requisitos completados en Sprint 0 (us-000-setup)
+
+La infraestructura base ya está configurada:
+
+- ✅ **Backend**: FastAPI configurado con SQLModel, Alembic migrations, y estructura modular
+- ✅ **Frontend**: React + TypeScript + Vite con FSD (Feature-Sliced Design)
+- ✅ **Base de datos**: 17 tablas normalizadas (3NF) con soft-delete y audit trail
+- ✅ **Migrations**: Alembic setup con migración inicial que crea todo el schema
+- ✅ **Seed script**: Datos iniciales (roles, estados, métodos de pago, usuario admin)
+- ✅ **Documentation**: CONTRIBUTING.md con guías completas de setup y desarrollo
 
 ---
 

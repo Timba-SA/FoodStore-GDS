@@ -1,0 +1,88 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "foodstore-backend"
+version = "0.1.0"
+description = "FastAPI backend for FoodStore e-commerce platform"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "FoodStore Team", email = "dev@foodstore.local"}
+]
+
+dependencies = [
+    "fastapi==0.110.0",
+    "uvicorn[standard]==0.27.0",
+    "sqlalchemy==2.0.25",
+    "sqlmodel==0.0.14",
+    "alembic==1.13.1",
+    "psycopg[binary]==3.1.13",
+    "passlib[bcrypt]==1.7.4",
+    "python-jose[cryptography]==3.3.0",
+    "bcrypt==4.1.2",
+    "slowapi==0.1.9",
+    "httpx==0.25.2",
+    "requests==2.31.0",
+    "python-dotenv==1.0.0",
+    "pydantic-settings==2.1.0",
+    "python-json-logger==2.0.7",
+    "mercadopago==2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==7.4.4",
+    "pytest-asyncio==0.23.2",
+    "black==24.1.1",
+    "ruff==0.2.1",
+    "mypy==1.8.0",
+]
+
+[project.urls]
+Repository = "https://github.com/foodstore/backend"
+Documentation = "https://docs.foodstore.local"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4",  # flake8-comprehensions
+]
+ignore = ["E501", "B008", "W191"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

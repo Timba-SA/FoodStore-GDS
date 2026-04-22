@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: foodstore-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://foodstore:foodstore@db:5432/foodstore_db
+      - SECRET_KEY=supersecretkey # En prod esto viene de secretos
+    depends_on:
+      - db
+    networks:
+      - foodstore-network
+
+  # Frontend Web
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: foodstore-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - foodstore-network
+
+  # Database
+  db:
+    image: postgres:15-alpine
+    container_name: foodstore-db
+    restart: always
+    environment:
+      POSTGRES_USER: foodstore
+      POSTGRES_PASSWORD: foodstore
+      POSTGRES_DB: foodstore_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - foodstore-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U foodstore"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  foodstore-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

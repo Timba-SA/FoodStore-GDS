@@ -29,24 +29,26 @@ VITE_API_BASE_URL=http://localhost:8000/api/v1
 
 ## Running the Application
 
+### Local Development
 ```bash
 # Development (with hot reload)
 npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-
-# Type checking
-npm run type-check
-
-# Linting
-npm run lint
 ```
 
-Dev server will be available at `http://localhost:5173`
+### Docker Development
+Para levantar el frontend junto con el backend y la base de datos:
+
+```bash
+# Desde la raíz del proyecto
+docker-compose up -d
+```
+
+*El frontend estará disponible en `http://localhost:5173`*
+
+### Build for production
+```bash
+npm run build
+```
 
 ## Project Structure
 

@@ -1,0 +1,19 @@
+# Backend .dockerignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+.env
+.git
+.gitignore
+.vscode
+.idea
+alembic/versions/*
+tests/
+README.md
+Dockerfile
+.dockerignore

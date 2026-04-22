@@ -1,9 +1,9 @@
 # Tasks: us-002-dockerization
 
 ## Phase 1: Backend Containerization
-- [ ] 1.1 Create `.dockerignore` for backend
-- [ ] 1.2 Create `backend/Dockerfile` (multi-stage)
-- [ ] 1.3 Verify backend image build
+- [x] 1.1 Create `.dockerignore` for backend ✅
+- [x] 1.2 Create `backend/Dockerfile` (multi-stage) ✅
+- [x] 1.3 Verify backend image build ✅
 
 ## Phase 2: Frontend Containerization
 - [ ] 2.1 Create `.dockerignore` for frontend

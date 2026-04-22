@@ -17,7 +17,6 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.22.3",
     "@tanstack/react-query": "^5.36.0",
-    "@tanstack/react-form": "^0.18.2",
     "zustand": "^4.4.1",
     "axios": "^1.6.7",
     "tailwindcss": "^3.4.1"
@@ -26,6 +25,7 @@
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@vitejs/plugin-react-swc": "^3.5.0",
+    "terser": "^5.27.0",
     "typescript": "^5.3.3",
     "vite": "^5.0.11",
     "eslint": "^8.55.0",

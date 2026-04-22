@@ -232,6 +232,17 @@ HTTP Status Codes:
 
 ## Development
 
+### Docker (Development)
+
+Para levantar el backend junto con el frontend y la base de datos usando Docker:
+
+```bash
+# Desde la raíz del proyecto
+docker-compose up -d
+```
+
+Esto levantará los servicios en `http://localhost:8000` (backend) y `http://localhost:5173` (frontend). La base de datos estará disponible en `localhost:5433`.
+
 ### Code Style
 
 - Use **FastAPI async patterns** (async/await)

@@ -76,7 +76,7 @@ async def login(
 ) -> TokenResponse:
     """Login user.
     
-    Placeholder for US-002. Authenticates user and returns JWT tokens.
+    Authenticates user and returns JWT tokens.
     
     Args:
         request: Login request with email and password
@@ -87,11 +87,27 @@ async def login(
         
     Raises:
         HTTPException 401: Invalid credentials
+        HTTPException 400: Invalid input data
     """
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Login endpoint not yet implemented (US-002)",
-    )
+    try:
+        auth_service = AuthService(session)
+        token_response = await auth_service.login(
+            email=request.email,
+            password=request.password,
+        )
+        return token_response
+    except ValueError as e:
+        # Invalid credentials
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+        )
+    except Exception as e:
+        # Log error and return generic message
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error during login",
+        )
 
 
 @router.post(

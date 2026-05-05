@@ -124,24 +124,41 @@ class RefreshToken(BaseModel, table=True):
         nullable=False,
         description="Usuario ID",
     )
-    token: str = Field(
+    token_hash: str = Field(
         sa_column=Column(String(500), unique=True, nullable=False),
-        description="Refresh token",
+        description="Hashed refresh token (SHA-256)",
     )
     expires_at: datetime = Field(
         description="Token expiration timestamp",
     )
-    is_revoked: bool = Field(
-        default=False,
-        description="Whether token has been revoked",
+    revoked_at: Optional[datetime] = Field(
+        default=None,
+        description="Timestamp when token was revoked",
+    )
+    replaced_by_id: Optional[int] = Field(
+        default=None,
+        foreign_key="refresh_tokens.id",
+        description="ID of the token that replaced this one (on rotation)",
+    )
+    family_id: str = Field(
+        sa_column=Column(String(36), nullable=False),
+        description="UUID v4 grouping tokens of the same login session",
+    )
+    last_used_at: Optional[datetime] = Field(
+        default=None,
+        description="Timestamp when token was last used",
     )
 
     # Relationships
     usuario: Usuario = Relationship(back_populates="refresh_tokens")
+    # Self-referential relationship for replaced_by
+    replaced_by: Optional["RefreshToken"] = Relationship(back_populates="replaced_token")
+    replaced_token: list["RefreshToken"] = Relationship(back_populates="replaced_by")
 
     __table_args__ = (
         Index("idx_refresh_tokens_usuario_id", "usuario_id"),
-        Index("idx_refresh_tokens_token", "token"),
+        Index("idx_refresh_tokens_token_hash", "token_hash"),
+        Index("idx_refresh_tokens_family_id", "family_id"),
     )
 
 

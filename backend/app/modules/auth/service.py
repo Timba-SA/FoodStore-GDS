@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 import uuid
+import hashlib
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -86,25 +87,30 @@ class AuthService:
 
         return encoded_jwt
 
-    async def create_refresh_token(self, user_id: int) -> str:
+    async def create_refresh_token(self, user_id: int, familia_id: Optional[str] = None) -> str:
         """Create and store a refresh token.
         
         Args:
             user_id: User ID to associate with refresh token
+            familia_id: Optional family ID for token grouping (if None, generates new)
             
         Returns:
             Refresh token string
         """
+        if familia_id is None:
+            familia_id = str(uuid.uuid4())
+            
         token_value = str(uuid.uuid4())
+        token_hash = hashlib.sha256(token_value.encode()).hexdigest()
         expires_at = datetime.now(timezone.utc) + timedelta(
             days=self.settings.REFRESH_TOKEN_EXPIRE_DAYS
         )
 
         refresh_token = RefreshToken(
             usuario_id=user_id,
-            token=token_value,
+            token_hash=token_hash,
             expires_at=expires_at,
-            is_revoked=False,
+            familia_id=familia_id,
         )
 
         self.session.add(refresh_token)
@@ -139,21 +145,78 @@ class AuthService:
             select(Usuario).where(Usuario.id == user_id)
         )
         user = result.scalars().first()
-
+        
         if not user:
             return None
-
+        
         # Get user roles
         roles_result = await self.session.execute(
             select(Rol).join(UsuarioRol).where(UsuarioRol.usuario_id == user_id)
         )
         roles = roles_result.scalars().all()
         role_names = [role.nombre for role in roles]
-
+        
         return {
             "user": user,
             "roles": role_names,
         }
+
+    async def login(self, email: str, password: str) -> TokenResponse:
+        """Authenticate user and issue access and refresh tokens.
+        
+        Args:
+            email: User email
+            password: Plain text password
+            
+        Returns:
+            TokenResponse with access token, refresh token, and user data
+            
+        Raises:
+            ValueError: If credentials are invalid
+        """
+        # Get user by email
+        user = await self.get_user_by_email(email)
+        if not user:
+            raise ValueError("Invalid credentials")
+        
+        # Verify password
+        if not self.verify_password(password, user.hashed_password):
+            raise ValueError("Invalid credentials")
+        
+        # Get user roles
+        user_with_roles = await self.get_user_with_roles(user.id)
+        if not user_with_roles:
+            raise ValueError("User roles not found")
+        
+        role_names = user_with_roles["roles"]
+        
+        # Create access token
+        access_token = self.create_access_token(
+            user_id=user.id,
+            email=user.email,
+            roles=role_names,
+        )
+        
+        # Create refresh token
+        refresh_token = await self.create_refresh_token(user_id=user.id)
+        
+        # Build user response
+        user_response = UserResponse(
+            id=user.id,
+            nombre=user.nombre,
+            email=user.email,
+            numero_telefono=user.numero_telefono,
+            roles=role_names,
+            creado_en=user.created_at,
+            actualizado_en=user.updated_at,
+        )
+        
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="Bearer",
+            user=user_response,
+        )
 
     async def register(self, request: RegisterRequest) -> TokenResponse:
         """Register a new user.

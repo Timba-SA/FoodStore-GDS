@@ -700,12 +700,12 @@ Implementación de gestión de direcciones de entrega con CRUD completo, soporte
   - Soft delete con confirmación
 
 ### Criterios de Aceptación Resumidos
-- [ ] Cliente registrado puede crear dirección
-- [ ] Primera dirección automáticamente principal
-- [ ] Solo una dirección principal por usuario
-- [ ] Cliente solo ve/edita sus direcciones
-- [ ] Soft delete
-- [ ] Frontend: formulario + lista + selector principal
+- [x] Cliente registrado puede crear dirección
+- [x] Primera dirección automáticamente principal
+- [x] Solo una dirección principal por usuario
+- [x] Cliente solo ve/edita sus direcciones
+- [x] Hard delete (modelo DB no tiene deleted_at — adaptación documentada en design.md)
+- [x] Frontend: formulario + lista + selector principal
 
 ### Reglas de Negocio Relevantes
 - RN-DI01: Múltiples direcciones por cliente, primera como predeterminada

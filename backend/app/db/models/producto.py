@@ -76,13 +76,20 @@ class Ingrediente(BaseModel, table=True):
         default=None,
         description="Ingredient description",
     )
+    es_alergeno: bool = Field(
+        default=False,
+        description="Whether this ingredient is a known allergen",
+    )
 
     # Relationships
     productos_ingredientes: list["ProductoIngrediente"] = Relationship(
         back_populates="ingrediente"
     )
 
-    __table_args__ = (Index("idx_ingredientes_nombre", "nombre"),)
+    __table_args__ = (
+        Index("idx_ingredientes_nombre", "nombre"),
+        Index("idx_ingredientes_es_alergeno", "es_alergeno"),
+    )
 
 
 class ProductoCategoria(BaseModel, table=True):

@@ -565,12 +565,12 @@ Implementación del catálogo de ingredientes con flag de alérgenos, permitiend
   - Badge visual para alérgenos
 
 ### Criterios de Aceptación Resumidos
-- [ ] Crear ingrediente con nombre único, es_alergeno booleano
-- [ ] Listar con paginación
-- [ ] Filtrar por es_alergeno=true
-- [ ] Editar nombre/flag
-- [ ] Soft delete
-- [ ] Frontend muestra badge para alérgenos
+- [x] Crear ingrediente con nombre único, es_alergeno booleano
+- [x] Listar con paginación
+- [x] Filtrar por es_alergeno=true
+- [x] Editar nombre/flag
+- [x] Soft delete
+- [x] Frontend muestra badge para alérgenos
 
 ### Reglas de Negocio Relevantes
 - RN-CA07: Ingrediente con M2M a Producto, con flag es_alergeno

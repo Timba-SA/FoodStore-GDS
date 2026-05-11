@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom'
 import App from '../App'
 import RegisterPage from '../../pages/RegisterPage'
 import CategoriasPage from '../../pages/CategoriasPage'
+import IngredientesPage from '../../pages/IngredientesPage'
 import ProtectedRoute from '../../shared/components/ProtectedRoute'
 
 // Pages
@@ -92,6 +93,10 @@ export const router = createBrowserRouter([
           {
             path: 'admin/categorias',
             element: <CategoriasPage />,
+          },
+          {
+            path: 'admin/ingredientes',
+            element: <IngredientesPage />,
           },
         ],
       },

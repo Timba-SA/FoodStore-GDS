@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
 import App from '../App'
 import RegisterPage from '../../pages/RegisterPage'
+import ProtectedRoute from '../../shared/components/ProtectedRoute'
 
 // Pages
 const HomePage = () => (
@@ -33,6 +34,18 @@ const DashboardPage = () => (
   </div>
 )
 
+const ForbiddenPage = () => (
+  <div className="flex h-screen items-center justify-center">
+    <div className="text-center">
+      <h1 className="text-6xl font-bold mb-4">403</h1>
+      <p className="text-gray-600">No tienes permisos para acceder a esta página</p>
+      <a href="/" className="mt-4 inline-block text-blue-600 hover:underline">
+        Volver al inicio
+      </a>
+    </div>
+  </div>
+)
+
 const NotFoundPage = () => (
   <div className="flex h-screen items-center justify-center">
     <div className="text-center">
@@ -60,8 +73,17 @@ export const router = createBrowserRouter([
         element: <RegisterPage />,
       },
       {
-        path: 'dashboard',
-        element: <DashboardPage />,
+        path: '403',
+        element: <ForbiddenPage />,
+      },
+      {
+        element: <ProtectedRoute />,
+        children: [
+          {
+            path: 'dashboard',
+            element: <DashboardPage />,
+          },
+        ],
       },
       {
         path: '*',

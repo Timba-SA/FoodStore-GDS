@@ -78,4 +78,4 @@ class TokenPayload(BaseModel):
     user_id: int
     email: str
     roles: List[str] = []
-    exp: Optional[int] = None
+    exp: Optional[float] = None

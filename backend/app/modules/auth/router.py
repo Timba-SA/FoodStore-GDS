@@ -75,6 +75,29 @@ async def get_current_user(
         actualizado_en=user.updated_at,
     )
 
+def require_role(allowed_roles: list[str]):
+    """Dependency factory that checks if the current user has at least one of the allowed roles.
+    
+    Args:
+        allowed_roles: List of role names (e.g., ["ADMIN", "STOCK"])
+        
+    Returns:
+        A FastAPI dependency function
+        
+    Raises:
+        HTTPException 403: If user does not have any of the required roles
+    """
+    def role_checker(current_user: UserResponse = Depends(get_current_user)) -> UserResponse:
+        if not any(role in current_user.roles for role in allowed_roles):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "error": "forbidden",
+                    "message": f"Not enough permissions. Requires one of: {', '.join(allowed_roles)}",
+                },
+            )
+        return current_user
+    return role_checker
 
 # ------------------------------------------------------------------ #
 # Endpoints                                                            #

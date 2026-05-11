@@ -442,14 +442,14 @@ Implementación del modelo RBAC (Role-Based Access Control) con 4 roles (ADMIN, 
   - Redirección a login si se detecta 401
 
 ### Criterios de Aceptación Resumidos
-- [ ] 4 roles implementados con IDs estables
-- [ ] `require_role()` valida permisos → HTTP 403 si insuficiente
-- [ ] Endpoint de asignación de roles (solo ADMIN)
-- [ ] ADMIN no puede quitarse rol si es único
-- [ ] Frontend renderiza UI según rol del usuario
-- [ ] ProtectedRoute bloquea acceso sin rol
-- [ ] Error 403 muestra mensaje claro
-- [ ] Error 401 maneja refresh + retry
+- [x] 4 roles implementados con IDs estables
+- [x] `require_role()` valida permisos → HTTP 403 si insuficiente
+- [x] Endpoint de asignación de roles (solo ADMIN)
+- [x] ADMIN no puede quitarse rol si es único
+- [x] Frontend renderiza UI según rol del usuario
+- [x] ProtectedRoute bloquea acceso sin rol
+- [x] Error 403 muestra mensaje claro
+- [x] Error 401 maneja refresh + retry
 
 ### Reglas de Negocio Relevantes
 - RN-RB01: 4 roles fijos con IDs estables

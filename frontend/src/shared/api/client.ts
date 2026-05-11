@@ -80,8 +80,18 @@ client.interceptors.response.use(
       _retry?: boolean
     }
 
+    const status = error.response?.status
+
+    // Handle 403 Forbidden — clear session and redirect
+    if (status === 403) {
+      const { clearAuth } = useAuthStore.getState()
+      clearAuth()
+      window.location.href = '/login'
+      return Promise.reject(error)
+    }
+
     // Only handle 401 that haven't been retried yet
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    if (status !== 401 || originalRequest._retry) {
       return Promise.reject(error)
     }
 

@@ -38,6 +38,7 @@ interface AuthState {
   setRefreshToken: (refreshToken: string) => void
   setLoading: (loading: boolean) => void
   clearAuth: () => void
+  hasRole: (allowedRoles: string[]) => boolean
 }
 
 // ------------------------------------------------------------------ //
@@ -46,7 +47,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
@@ -76,6 +77,12 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
           isLoading: false,
         }),
+        
+      hasRole: (allowedRoles) => {
+        const user = get().user
+        if (!user || !user.roles) return false
+        return allowedRoles.some((r) => user.roles.includes(r))
+      },
     }),
     {
       name: 'auth-storage',

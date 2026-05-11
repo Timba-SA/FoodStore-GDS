@@ -18,6 +18,7 @@ from app.modules.auth.schemas import (
     UserResponse,
     TokenPayload,
 )
+from app.modules.auth.repository import RefreshTokenRepository
 
 
 # Password hashing context
@@ -25,46 +26,45 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class AuthService:
-    """Authentication service for register, login, and token operations."""
+    """Authentication service for register, login, refresh, logout and /me."""
 
     def __init__(self, session: AsyncSession):
         """Initialize auth service with database session."""
         self.session = session
         self.settings = get_settings()
+        self.token_repo = RefreshTokenRepository(session)
+
+    # ------------------------------------------------------------------ #
+    # Password helpers                                                     #
+    # ------------------------------------------------------------------ #
 
     @staticmethod
     def hash_password(password: str) -> str:
-        """Hash a password with bcrypt.
-        
-        Args:
-            password: Plain text password
-            
-        Returns:
-            Hashed password
-        """
+        """Hash a password with bcrypt."""
         return pwd_context.hash(password)
 
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
-        """Verify a password against its hash.
-        
-        Args:
-            plain_password: Plain text password to verify
-            hashed_password: Hashed password from database
-            
-        Returns:
-            True if password matches, False otherwise
-        """
+        """Verify a password against its bcrypt hash."""
         return pwd_context.verify(plain_password, hashed_password)
 
+    @staticmethod
+    def _hash_token(token_value: str) -> str:
+        """Return SHA-256 hex digest of a raw token string."""
+        return hashlib.sha256(token_value.encode()).hexdigest()
+
+    # ------------------------------------------------------------------ #
+    # JWT creation                                                         #
+    # ------------------------------------------------------------------ #
+
     def create_access_token(self, user_id: int, email: str, roles: list[str]) -> str:
-        """Create a JWT access token.
-        
+        """Create a signed JWT access token (30 min expiry).
+
         Args:
             user_id: User ID for token payload
             email: User email for token payload
             roles: List of role names for token payload
-            
+
         Returns:
             JWT token string
         """
@@ -79,239 +79,92 @@ class AuthService:
             "iat": now.timestamp(),
         }
 
-        encoded_jwt = jwt.encode(
+        return jwt.encode(
             payload,
             self.settings.SECRET_KEY,
             algorithm=self.settings.ALGORITHM,
         )
 
-        return encoded_jwt
+    async def _create_refresh_token_record(
+        self, user_id: int, family_id: Optional[str] = None
+    ) -> tuple[str, RefreshToken]:
+        """Create and persist a refresh token record.
 
-    async def create_refresh_token(self, user_id: int, familia_id: Optional[str] = None) -> str:
-        """Create and store a refresh token.
-        
         Args:
             user_id: User ID to associate with refresh token
-            familia_id: Optional family ID for token grouping (if None, generates new)
-            
+            family_id: Optional family ID. If None, a new UUID is generated.
+
         Returns:
-            Refresh token string
+            Tuple of (raw_token_value, RefreshToken DB record)
         """
-        if familia_id is None:
-            familia_id = str(uuid.uuid4())
-            
-        token_value = str(uuid.uuid4())
-        token_hash = hashlib.sha256(token_value.encode()).hexdigest()
+        if family_id is None:
+            family_id = str(uuid.uuid4())
+
+        raw_token = str(uuid.uuid4())
+        token_hash = self._hash_token(raw_token)
         expires_at = datetime.now(timezone.utc) + timedelta(
             days=self.settings.REFRESH_TOKEN_EXPIRE_DAYS
         )
 
-        refresh_token = RefreshToken(
+        record = RefreshToken(
             usuario_id=user_id,
             token_hash=token_hash,
             expires_at=expires_at,
-            familia_id=familia_id,
+            family_id=family_id,
         )
 
-        self.session.add(refresh_token)
-        await self.session.flush()
+        self.session.add(record)
+        await self.session.flush()  # Populate record.id without full commit
 
-        return token_value
+        return raw_token, record
+
+    # ------------------------------------------------------------------ #
+    # User queries                                                         #
+    # ------------------------------------------------------------------ #
 
     async def get_user_by_email(self, email: str) -> Optional[Usuario]:
-        """Get user by email address.
-        
-        Args:
-            email: User email to search for
-            
-        Returns:
-            Usuario object if found, None otherwise
-        """
+        """Get user by email address."""
         result = await self.session.execute(
             select(Usuario).where(Usuario.email == email)
         )
         return result.scalars().first()
 
-    async def get_user_with_roles(self, user_id: int) -> Optional[dict]:
-        """Get user data with their roles.
-        
-        Args:
-            user_id: User ID to fetch
-            
-        Returns:
-            Dictionary with user data and roles list
-        """
+    async def get_user_by_id(self, user_id: int) -> Optional[Usuario]:
+        """Get user by primary key."""
         result = await self.session.execute(
             select(Usuario).where(Usuario.id == user_id)
         )
-        user = result.scalars().first()
-        
-        if not user:
-            return None
-        
-        # Get user roles
+        return result.scalars().first()
+
+    async def get_user_roles(self, user_id: int) -> list[str]:
+        """Return role name strings for a given user ID."""
         roles_result = await self.session.execute(
             select(Rol).join(UsuarioRol).where(UsuarioRol.usuario_id == user_id)
         )
-        roles = roles_result.scalars().all()
-        role_names = [role.nombre for role in roles]
-        
-        return {
-            "user": user,
-            "roles": role_names,
-        }
+        return [role.nombre for role in roles_result.scalars().all()]
 
-    async def login(self, email: str, password: str) -> TokenResponse:
-        """Authenticate user and issue access and refresh tokens.
-        
-        Args:
-            email: User email
-            password: Plain text password
-            
-        Returns:
-            TokenResponse with access token, refresh token, and user data
-            
-        Raises:
-            ValueError: If credentials are invalid
-        """
-        # Get user by email
-        user = await self.get_user_by_email(email)
-        if not user:
-            raise ValueError("Invalid credentials")
-        
-        # Verify password
-        if not self.verify_password(password, user.hashed_password):
-            raise ValueError("Invalid credentials")
-        
-        # Get user roles
-        user_with_roles = await self.get_user_with_roles(user.id)
-        if not user_with_roles:
-            raise ValueError("User roles not found")
-        
-        role_names = user_with_roles["roles"]
-        
-        # Create access token
-        access_token = self.create_access_token(
-            user_id=user.id,
-            email=user.email,
-            roles=role_names,
-        )
-        
-        # Create refresh token
-        refresh_token = await self.create_refresh_token(user_id=user.id)
-        
-        # Build user response
-        user_response = UserResponse(
+    async def _build_user_response(self, user: Usuario) -> UserResponse:
+        """Build UserResponse from a Usuario ORM object."""
+        roles = await self.get_user_roles(user.id)
+        return UserResponse(
             id=user.id,
             nombre=user.nombre,
             email=user.email,
             numero_telefono=user.numero_telefono,
-            roles=role_names,
+            roles=roles,
             creado_en=user.created_at,
             actualizado_en=user.updated_at,
         )
-        
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            token_type="Bearer",
-            user=user_response,
-        )
 
-    async def register(self, request: RegisterRequest) -> TokenResponse:
-        """Register a new user.
-        
-        Creates a new user with CLIENT role and returns tokens.
-        
-        Args:
-            request: RegisterRequest with user data
-            
+    # ------------------------------------------------------------------ #
+    # Token decoding / validation                                          #
+    # ------------------------------------------------------------------ #
+
+    def decode_access_token(self, token: str) -> Optional[TokenPayload]:
+        """Decode and validate a JWT access token.
+
         Returns:
-            TokenResponse with access token, refresh token, and user data
-            
-        Raises:
-            ValueError: If email already registered
-        """
-        # Check if email already exists
-        existing_user = await self.get_user_by_email(request.email)
-        if existing_user:
-            raise ValueError("El email ya está registrado")
-
-        # Create new user
-        hashed_password = self.hash_password(request.password)
-        
-        new_user = Usuario(
-            email=request.email,
-            nombre=request.nombre,
-            apellido="",  # Not provided in registration, can be updated later
-            hashed_password=hashed_password,
-            numero_telefono=request.numero_telefono,
-            activo=True,
-            verificado=False,
-        )
-
-        self.session.add(new_user)
-        await self.session.flush()  # Get the ID without committing
-
-        # Get CLIENT role (customer role with ID 2 based on seed data)
-        # For now we'll search by name since we don't know the ID yet
-        roles_result = await self.session.execute(
-            select(Rol).where(Rol.nombre == "customer")
-        )
-        customer_role = roles_result.scalars().first()
-
-        if not customer_role:
-            # If customer role doesn't exist, create it
-            customer_role = Rol(
-                nombre="customer",
-                descripcion="Regular customer",
-            )
-            self.session.add(customer_role)
-            await self.session.flush()
-
-        # Assign CLIENT role to user
-        usuario_rol = UsuarioRol(
-            usuario_id=new_user.id,
-            rol_id=customer_role.id,
-        )
-        self.session.add(usuario_rol)
-        await self.session.flush()
-
-        # Create tokens
-        access_token = self.create_access_token(
-            user_id=new_user.id,
-            email=new_user.email,
-            roles=["customer"],
-        )
-
-        refresh_token = await self.create_refresh_token(user_id=new_user.id)
-
-        # Build user response
-        user_response = UserResponse(
-            id=new_user.id,
-            nombre=new_user.nombre,
-            email=new_user.email,
-            numero_telefono=new_user.numero_telefono,
-            roles=["customer"],
-            creado_en=new_user.created_at,
-            actualizado_en=new_user.updated_at,
-        )
-
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            token_type="Bearer",
-            user=user_response,
-        )
-
-    def decode_token(self, token: str) -> Optional[TokenPayload]:
-        """Decode and validate a JWT token.
-        
-        Args:
-            token: JWT token string
-            
-        Returns:
-            TokenPayload if valid, None if invalid or expired
+            TokenPayload if valid, None if invalid or expired.
         """
         try:
             payload = jwt.decode(
@@ -336,3 +189,200 @@ class AuthService:
             )
         except JWTError:
             return None
+
+    # ------------------------------------------------------------------ #
+    # Auth operations                                                      #
+    # ------------------------------------------------------------------ #
+
+    async def login(self, email: str, password: str) -> TokenResponse:
+        """Authenticate user and issue access + refresh tokens.
+
+        Args:
+            email: User email
+            password: Plain text password
+
+        Returns:
+            TokenResponse with both tokens and user data
+
+        Raises:
+            ValueError: If credentials are invalid
+        """
+        user = await self.get_user_by_email(email)
+        if not user or not self.verify_password(password, user.hashed_password):
+            raise ValueError("Invalid credentials")
+
+        roles = await self.get_user_roles(user.id)
+        access_token = self.create_access_token(
+            user_id=user.id, email=user.email, roles=roles
+        )
+        raw_refresh, _ = await self._create_refresh_token_record(user_id=user.id)
+
+        user_response = await self._build_user_response(user)
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=raw_refresh,
+            token_type="Bearer",
+            user=user_response,
+        )
+
+    async def register(self, request: RegisterRequest) -> TokenResponse:
+        """Register a new user with CLIENT role and return tokens.
+
+        Args:
+            request: RegisterRequest with user data
+
+        Returns:
+            TokenResponse with both tokens and user data
+
+        Raises:
+            ValueError: If email already registered
+        """
+        existing_user = await self.get_user_by_email(request.email)
+        if existing_user:
+            raise ValueError("El email ya está registrado")
+
+        hashed_password = self.hash_password(request.password)
+        new_user = Usuario(
+            email=request.email,
+            nombre=request.nombre,
+            apellido="",
+            hashed_password=hashed_password,
+            numero_telefono=request.numero_telefono,
+            activo=True,
+            verificado=False,
+        )
+        self.session.add(new_user)
+        await self.session.flush()
+
+        # Assign CUSTOMER role (create if not present)
+        roles_result = await self.session.execute(
+            select(Rol).where(Rol.nombre == "customer")
+        )
+        customer_role = roles_result.scalars().first()
+        if not customer_role:
+            customer_role = Rol(nombre="customer", descripcion="Regular customer")
+            self.session.add(customer_role)
+            await self.session.flush()
+
+        self.session.add(UsuarioRol(usuario_id=new_user.id, rol_id=customer_role.id))
+        await self.session.flush()
+
+        access_token = self.create_access_token(
+            user_id=new_user.id, email=new_user.email, roles=["customer"]
+        )
+        raw_refresh, _ = await self._create_refresh_token_record(user_id=new_user.id)
+
+        user_response = await self._build_user_response(new_user)
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=raw_refresh,
+            token_type="Bearer",
+            user=user_response,
+        )
+
+    async def refresh(self, raw_token: str) -> TokenResponse:
+        """Rotate a refresh token and issue a new token pair.
+
+        Implements rotation + replay detection per design:
+        - Valid & not revoked → rotate (revoke old, issue new in same family)
+        - Already revoked → replay detected → revoke entire family → 401
+        - Expired / not found → 401
+
+        Args:
+            raw_token: Raw refresh token string sent by client
+
+        Returns:
+            TokenResponse with new access + refresh tokens
+
+        Raises:
+            ValueError: On any invalid/revoked/replay scenario
+        """
+        token_hash = self._hash_token(raw_token)
+        record = await self.token_repo.get_by_token_hash(token_hash)
+
+        if not record:
+            raise ValueError("Invalid refresh token")
+
+        now = datetime.now(timezone.utc)
+
+        # Expired?
+        expires_at = record.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if now > expires_at:
+            raise ValueError("Refresh token expired")
+
+        # Replay detected: token already revoked
+        if record.revoked_at is not None:
+            # Revoke the entire family to invalidate all sessions from this lineage
+            await self.token_repo.revoke_family(record.family_id)
+            raise ValueError("Refresh token reuse detected — all sessions revoked")
+
+        # Valid token → rotate
+        user = await self.get_user_by_id(record.usuario_id)
+        if not user:
+            raise ValueError("User not found")
+
+        roles = await self.get_user_roles(user.id)
+
+        # Mark old token as revoked
+        await self.token_repo.revoke_family_single(record.id)
+
+        # Issue new token in the same family
+        raw_new, new_record = await self._create_refresh_token_record(
+            user_id=user.id, family_id=record.family_id
+        )
+
+        # Link old → new for audit trail
+        await self.token_repo.link_replaced_by(record.id, new_record.id)
+
+        access_token = self.create_access_token(
+            user_id=user.id, email=user.email, roles=roles
+        )
+
+        user_response = await self._build_user_response(user)
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=raw_new,
+            token_type="Bearer",
+            user=user_response,
+        )
+
+    async def logout(self, raw_token: str) -> None:
+        """Revoke a refresh token on logout.
+
+        Revokes the specific token only (not the full family).
+        If token is not found, we still return success (idempotent).
+
+        Args:
+            raw_token: Raw refresh token string sent by client
+        """
+        token_hash = self._hash_token(raw_token)
+        record = await self.token_repo.get_by_token_hash(token_hash)
+
+        if record and record.revoked_at is None:
+            await self.token_repo.revoke_family_single(record.id)
+
+    async def get_current_user(self, access_token: str) -> Usuario:
+        """Validate access token and return the corresponding user.
+
+        Args:
+            access_token: Raw JWT access token string
+
+        Returns:
+            Usuario ORM object
+
+        Raises:
+            ValueError: If token is invalid or user not found/inactive
+        """
+        payload = self.decode_access_token(access_token)
+        if not payload:
+            raise ValueError("Invalid or expired access token")
+
+        user = await self.get_user_by_id(payload.user_id)
+        if not user:
+            raise ValueError("User not found")
+        if not user.activo:
+            raise ValueError("User account is inactive")
+
+        return user

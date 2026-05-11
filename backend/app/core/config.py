@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     # Rate Limiting
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = 60
+    # Per-endpoint auth limits (format: "N/minute" or "N/hour")
+    RATE_LIMIT_LOGIN: str = "5/minute"
+    RATE_LIMIT_REGISTER: str = "3/minute"
+    RATE_LIMIT_REFRESH: str = "10/minute"
 
     class Config:
         """Pydantic config."""

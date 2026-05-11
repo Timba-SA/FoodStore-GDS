@@ -1,15 +1,26 @@
+/**
+ * Auth store — single source of truth for authentication state.
+ *
+ * Tokens are stored here (via Zustand persist) and ONLY accessed
+ * through this store. The Axios client reads from here, never from
+ * localStorage directly.
+ */
+
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+// ------------------------------------------------------------------ //
+// Types — aligned to backend UserResponse schema                       //
+// ------------------------------------------------------------------ //
+
 export interface User {
   id: number
-  email: string
   nombre: string
-  apellido: string
-  numero_telefono?: string
-  activo: boolean
-  verificado: boolean
-  created_at: string
+  email: string
+  numero_telefono?: string | null
+  roles: string[]
+  creado_en: string
+  actualizado_en: string
 }
 
 interface AuthState {
@@ -19,12 +30,19 @@ interface AuthState {
   isAuthenticated: boolean
   isLoading: boolean
 
-  // Actions
-  setUser: (user: User | null) => void
-  setTokens: (accessToken: string, refreshToken: string) => void
+  // Atomic action: set tokens + user in one call (avoids partial state)
+  setAuth: (accessToken: string, refreshToken: string, user: User) => void
+  // Update only the access token (used by the refresh interceptor)
+  setAccessToken: (accessToken: string) => void
+  // Update only the refresh token (used after rotation)
+  setRefreshToken: (refreshToken: string) => void
   setLoading: (loading: boolean) => void
-  logout: () => void
+  clearAuth: () => void
 }
+
+// ------------------------------------------------------------------ //
+// Store                                                                //
+// ------------------------------------------------------------------ //
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -35,33 +53,33 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
 
-      setUser: (user) =>
-        set({
-          user,
-          isAuthenticated: !!user,
-        }),
-
-      setTokens: (accessToken, refreshToken) =>
+      setAuth: (accessToken, refreshToken, user) =>
         set({
           accessToken,
           refreshToken,
+          user,
+          isAuthenticated: true,
+          isLoading: false,
         }),
 
-      setLoading: (loading) =>
-        set({
-          isLoading: loading,
-        }),
+      setAccessToken: (accessToken) => set({ accessToken }),
 
-      logout: () =>
+      setRefreshToken: (refreshToken) => set({ refreshToken }),
+
+      setLoading: (loading) => set({ isLoading: loading }),
+
+      clearAuth: () =>
         set({
           user: null,
           accessToken: null,
           refreshToken: null,
           isAuthenticated: false,
+          isLoading: false,
         }),
     }),
     {
       name: 'auth-storage',
+      // Only persist auth data — isLoading is transient
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
@@ -71,3 +89,12 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 )
+
+// ------------------------------------------------------------------ //
+// Selector helpers (use these in components to avoid over-renders)    //
+// ------------------------------------------------------------------ //
+
+export const selectAccessToken = (s: AuthState) => s.accessToken
+export const selectRefreshToken = (s: AuthState) => s.refreshToken
+export const selectUser = (s: AuthState) => s.user
+export const selectIsAuthenticated = (s: AuthState) => s.isAuthenticated

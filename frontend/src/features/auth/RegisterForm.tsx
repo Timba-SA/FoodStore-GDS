@@ -5,11 +5,9 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { registerUser, RegisterRequest } from '../../shared/api/auth'
-import { useAuthStore } from './store/authStore'
 
 export const RegisterForm: React.FC = () => {
   const navigate = useNavigate()
-  const { setUser, setTokens } = useAuthStore()
 
   // Form state
   const [formData, setFormData] = useState<RegisterRequest>({
@@ -27,11 +25,7 @@ export const RegisterForm: React.FC = () => {
   // Form field handlers
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-    // Clear field error when user starts typing
+    setFormData((prev) => ({ ...prev, [name]: value }))
     if (fieldErrors[name]) {
       setFieldErrors((prev) => {
         const newErrors = { ...prev }
@@ -57,33 +51,28 @@ export const RegisterForm: React.FC = () => {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
 
-    // Nombre validation
     if (!formData.nombre.trim()) {
       newErrors.nombre = 'El nombre es requerido'
     } else if (formData.nombre.trim().length < 2) {
       newErrors.nombre = 'El nombre debe tener al menos 2 caracteres'
     }
 
-    // Email validation
     if (!formData.email.trim()) {
       newErrors.email = 'El email es requerido'
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Email inválido'
     }
 
-    // Password validation
     if (!formData.password) {
       newErrors.password = 'La contraseña es requerida'
     } else if (formData.password.length < 8) {
       newErrors.password = 'La contraseña debe tener al menos 8 caracteres'
     }
 
-    // Confirm password validation
     if (formData.password !== confirmPassword) {
       newErrors.confirmPassword = 'Las contraseñas no coinciden'
     }
 
-    // Telefono validation (optional, but validate if provided)
     if (formData.numero_telefono && formData.numero_telefono.length > 20) {
       newErrors.numero_telefono = 'El teléfono es demasiado largo'
     }
@@ -93,37 +82,24 @@ export const RegisterForm: React.FC = () => {
   }
 
   // Form submission
+  // registerUser() calls setAuth() internally — no need to touch the store here
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
 
-    if (!validateForm()) {
-      return
-    }
+    if (!validateForm()) return
 
     setIsLoading(true)
-
     try {
-      const response = await registerUser({
+      await registerUser({
         nombre: formData.nombre.trim(),
         email: formData.email.trim(),
         password: formData.password,
         numero_telefono: formData.numero_telefono || undefined,
       })
-
-      // Update auth store
-      setUser(response.user)
-      setTokens(response.access_token, response.refresh_token)
-
-      // Store tokens in localStorage (Zustand persist will also do this)
-      localStorage.setItem('access_token', response.access_token)
-      localStorage.setItem('refresh_token', response.refresh_token)
-
-      // Redirect to dashboard
       navigate('/dashboard')
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al registrar'
-      setError(errorMessage)
+      setError(err instanceof Error ? err.message : 'Error desconocido al registrar')
     } finally {
       setIsLoading(false)
     }
@@ -139,10 +115,7 @@ export const RegisterForm: React.FC = () => {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             O{' '}
-            <a
-              href="/login"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
+            <a href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
               inicia sesión si ya tienes cuenta
             </a>
           </p>

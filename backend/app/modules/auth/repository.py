@@ -82,22 +82,52 @@ class RefreshTokenRepository(BaseRepository[RefreshToken]):
 
     async def rotate_token(self, old_token_id: int, new_token: RefreshToken) -> RefreshToken:
         """Rotate token: set replaced_by_id on old token and persist new token.
-        
+
         Args:
             old_token_id: ID of token being replaced
             new_token: New RefreshToken instance
-            
+
         Returns:
             The new token persisted
         """
-        # Update old token to point to new token
         stmt = (
             update(self.model_class)
             .where(self.model_class.id == old_token_id)
             .values(replaced_by_id=new_token.id)
         )
         await self.session.execute(stmt)
-        # Persist new token
         self.session.add(new_token)
         await self.session.flush()
         return new_token
+
+    async def revoke_family_single(self, token_id: int) -> None:
+        """Revoke a single token by ID (set revoked_at = now).
+
+        Used during normal rotation to mark the consumed token as revoked
+        without invalidating the rest of the family.
+
+        Args:
+            token_id: Primary key of the token to revoke
+        """
+        stmt = (
+            update(self.model_class)
+            .where(self.model_class.id == token_id)
+            .values(revoked_at=func.now())
+        )
+        await self.session.execute(stmt)
+        await self.session.flush()
+
+    async def link_replaced_by(self, old_id: int, new_id: int) -> None:
+        """Set replaced_by_id on old token to create the rotation audit trail.
+
+        Args:
+            old_id: ID of the consumed/revoked token
+            new_id: ID of the newly issued token
+        """
+        stmt = (
+            update(self.model_class)
+            .where(self.model_class.id == old_id)
+            .values(replaced_by_id=new_id)
+        )
+        await self.session.execute(stmt)
+        await self.session.flush()

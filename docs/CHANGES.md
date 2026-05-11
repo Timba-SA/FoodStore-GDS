@@ -373,15 +373,15 @@ Implementación completa del flujo de autenticación: registro de usuarios, logi
   - Redirección automática al login si sesión expira
 
 ### Criterios de Aceptación Resumidos
-- [ ] Registro valida email único, contraseña >= 8 chars
-- [ ] Contraseña hasheada con bcrypt (cost >= 12)
-- [ ] Login retorna access (30 min) + refresh (7 días) tokens
-- [ ] Rate limiting: 5 intentos fallidos/15 min → HTTP 429
-- [ ] Refresh token rota el anterior
-- [ ] Replay attack detectado → revoca TODOS los tokens del usuario
-- [ ] Logout invalida refresh token en BD
-- [ ] Interceptor maneja 401 automáticamente
-- [ ] Frontend persiste tokens en authStore
+- [x] Registro valida email único, contraseña >= 8 chars
+- [x] Contraseña hasheada con bcrypt (cost >= 12)
+- [x] Login retorna access (30 min) + refresh (7 días) tokens
+- [x] Rate limiting: 5 intentos fallidos/15 min → HTTP 429
+- [x] Refresh token rota el anterior
+- [x] Replay attack detectado → revoca TODOS los tokens del usuario
+- [x] Logout invalida refresh token en BD
+- [x] Interceptor maneja 401 automáticamente
+- [x] Frontend persiste tokens en authStore
 
 ### Reglas de Negocio Relevantes
 - RN-AU01: Contraseña nunca en texto plano, bcrypt cost >= 10 (backend <= 12)

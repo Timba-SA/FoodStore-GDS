@@ -1,266 +1,346 @@
-"""Unit tests for AuthService - no database required (mocked)."""
+"""Unit tests for AuthService — password, token creation, refresh/rotation, logout, replay.
+
+Covers tasks 5.1 (login/me), 5.2 (rotation/replay), via unit tests with mocked DB.
+"""
+
+import hashlib
+import uuid
+from datetime import datetime, timedelta, timezone
+from unittest.mock import AsyncMock, MagicMock, patch, call
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, timezone
-from passlib.context import CryptContext
+from jose import jwt
 
-from app.modules.auth.service import AuthService
-from app.modules.auth.schemas import RegisterRequest
-
-
-# Password context for testing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from app.modules.auth.service import AuthService, pwd_context
+from app.modules.auth.schemas import RegisterRequest, TokenPayload
+from app.db.models.usuario import RefreshToken
 
 
-@pytest.fixture
-def mock_session():
-    """Mock database session."""
-    return AsyncMock()
+# ============================================================================
+# Fixtures
+# ============================================================================
 
 
 @pytest.fixture
 def mock_settings():
-    """Mock application settings."""
-    settings = MagicMock()
-    settings.ACCESS_TOKEN_EXPIRE_MINUTES = 30
-    settings.REFRESH_TOKEN_EXPIRE_DAYS = 7
-    settings.SECRET_KEY = "test-secret-key-for-testing-only"
-    settings.ALGORITHM = "HS256"
-    return settings
+    s = MagicMock()
+    s.SECRET_KEY = "test-secret-key-for-jwt"
+    s.ALGORITHM = "HS256"
+    s.ACCESS_TOKEN_EXPIRE_MINUTES = 30
+    s.REFRESH_TOKEN_EXPIRE_DAYS = 7
+    s.RATE_LIMIT_LOGIN = "5/minute"
+    s.RATE_LIMIT_REGISTER = "3/minute"
+    s.RATE_LIMIT_REFRESH = "10/minute"
+    return s
 
 
 @pytest.fixture
-def auth_service(mock_session, mock_settings):
-    """Create AuthService with mocked dependencies."""
-    service = AuthService(mock_session)
-    service.settings = mock_settings
-    return service
+def mock_session():
+    return AsyncMock()
+
+
+@pytest.fixture
+async def service(mock_session, mock_settings):
+    with patch("app.modules.auth.service.get_settings", return_value=mock_settings):
+        svc = AuthService(mock_session)
+        yield svc
+
+
+def make_user(user_id: int = 1, email: str = "user@example.com") -> MagicMock:
+    user = MagicMock()
+    user.id = user_id
+    user.email = email
+    user.nombre = "Test User"
+    user.hashed_password = AuthService.hash_password("ValidPass123!")
+    user.numero_telefono = None
+    user.activo = True
+    user.created_at = datetime.now(timezone.utc)
+    user.updated_at = datetime.now(timezone.utc)
+    return user
+
+
+def make_refresh_token(
+    user_id: int = 1,
+    raw: str | None = None,
+    revoked: bool = False,
+    expired: bool = False,
+    family_id: str | None = None,
+) -> tuple[str, RefreshToken]:
+    """Return (raw_token, RefreshToken ORM-like object)."""
+    raw = raw or str(uuid.uuid4())
+    token_hash = hashlib.sha256(raw.encode()).hexdigest()
+    expires_at = (
+        datetime.now(timezone.utc) - timedelta(hours=1)
+        if expired
+        else datetime.now(timezone.utc) + timedelta(days=7)
+    )
+    rt = MagicMock(spec=RefreshToken)
+    rt.id = 42
+    rt.usuario_id = user_id
+    rt.token_hash = token_hash
+    rt.expires_at = expires_at
+    rt.revoked_at = datetime.now(timezone.utc) if revoked else None
+    rt.replaced_by_id = None
+    rt.family_id = family_id or str(uuid.uuid4())
+    return raw, rt
+
+
+# ============================================================================
+# Password hashing
+# ============================================================================
 
 
 class TestPasswordHashing:
-    """Test password hashing functionality."""
+    def test_hash_creates_bcrypt(self):
+        h = AuthService.hash_password("Secret123!")
+        assert h.startswith("$2")
+        assert len(h) > 20
 
-    def test_hash_password_creates_bcrypt_hash(self):
-        """Test that hash_password creates a valid bcrypt hash."""
-        password = "SecurePassword123"
-        hashed = AuthService.hash_password(password)
+    def test_same_password_different_hashes(self):
+        p = "Secret123!"
+        h1 = AuthService.hash_password(p)
+        h2 = AuthService.hash_password(p)
+        assert h1 != h2
 
-        # Bcrypt hashes start with $2b$, $2y$, or $2a$
-        assert hashed.startswith("$2")
-        assert len(hashed) > 50  # bcrypt hashes are typically 60 chars
+    def test_verify_correct_password(self):
+        p = "Secret123!"
+        assert AuthService.verify_password(p, AuthService.hash_password(p)) is True
 
-    def test_hash_password_different_each_time(self):
-        """Test that hashing same password produces different hashes (due to salt)."""
-        password = "SecurePassword123"
-        hash1 = AuthService.hash_password(password)
-        hash2 = AuthService.hash_password(password)
+    def test_verify_wrong_password(self):
+        assert AuthService.verify_password("Wrong!", AuthService.hash_password("Secret123!")) is False
 
-        # Hashes should be different due to random salt
-        assert hash1 != hash2
-
-    def test_verify_password_correct(self):
-        """Test that verify_password returns True for correct password."""
-        password = "SecurePassword123"
-        hashed = AuthService.hash_password(password)
-
-        assert AuthService.verify_password(password, hashed) is True
-
-    def test_verify_password_incorrect(self):
-        """Test that verify_password returns False for incorrect password."""
-        password = "SecurePassword123"
-        wrong_password = "WrongPassword123"
-        hashed = AuthService.hash_password(password)
-
-        assert AuthService.verify_password(wrong_password, hashed) is False
+    def test_verify_empty_password(self):
+        assert AuthService.verify_password("", AuthService.hash_password("Secret123!")) is False
 
 
-class TestTokenCreation:
-    """Test JWT token creation."""
+# ============================================================================
+# Access token — creation & decoding (task 5.1)
+# ============================================================================
 
-    def test_create_access_token_returns_string(self, auth_service):
-        """Test that create_access_token returns a JWT string."""
-        token = auth_service.create_access_token(
-            user_id=1,
-            email="user@example.com",
-            roles=["customer"],
-        )
 
+class TestAccessToken:
+    def test_create_returns_valid_jwt(self, service):
+        token = service.create_access_token(1, "a@b.com", ["customer"])
         assert isinstance(token, str)
-        assert len(token) > 50  # JWT should be reasonably long
-        # JWT has three parts separated by dots
         assert token.count(".") == 2
 
-    def test_create_access_token_includes_claims(self, auth_service):
-        """Test that access token includes correct claims."""
-        from jose import jwt
+    def test_payload_fields(self, service):
+        token = service.create_access_token(1, "a@b.com", ["customer", "admin"])
+        claims = jwt.get_unverified_claims(token)
+        assert claims["user_id"] == 1
+        assert claims["email"] == "a@b.com"
+        assert set(claims["roles"]) == {"customer", "admin"}
+        assert "exp" in claims and "iat" in claims
 
-        user_id = 42
-        email = "user@example.com"
-        roles = ["customer", "admin"]
+    def test_decode_valid_token(self, service):
+        token = service.create_access_token(1, "a@b.com", ["customer"])
+        payload = service.decode_access_token(token)
+        assert payload is not None
+        assert payload.user_id == 1
+        assert payload.email == "a@b.com"
 
-        token = auth_service.create_access_token(
-            user_id=user_id,
-            email=email,
-            roles=roles,
-        )
+    def test_decode_invalid_token_returns_none(self, service):
+        assert service.decode_access_token("not.a.token") is None
 
-        # Decode token to verify claims
-        payload = jwt.decode(
-            token,
-            auth_service.settings.SECRET_KEY,
-            algorithms=[auth_service.settings.ALGORITHM],
-        )
-
-        assert payload["user_id"] == user_id
-        assert payload["email"] == email
-        assert payload["roles"] == roles
-        assert "exp" in payload
-        assert "iat" in payload
-
-
-class TestRefreshTokenCreation:
-    """Test refresh token creation."""
-
-    @pytest.mark.asyncio
-    async def test_create_refresh_token_returns_uuid_string(self, auth_service):
-        """Test that create_refresh_token returns a UUID string."""
-        token = await auth_service.create_refresh_token(user_id=1)
-
-        assert isinstance(token, str)
-        # UUID format: 8-4-4-4-12 hex characters
-        assert len(token) == 36
-        assert token.count("-") == 4
-
-    @pytest.mark.asyncio
-    async def test_create_refresh_token_adds_to_session(self, auth_service, mock_session):
-        """Test that refresh token is added to session."""
-        token = await auth_service.create_refresh_token(user_id=1)
-
-        # Verify session.add was called
-        mock_session.add.assert_called_once()
-        # Verify session.flush was called
-        mock_session.flush.assert_called_once()
-
-        # Get the RefreshToken object that was added
-        added_token_obj = mock_session.add.call_args[0][0]
-        assert added_token_obj.usuario_id == 1
-        assert added_token_obj.token == token
-        assert added_token_obj.is_revoked is False
-
-
-class TestUserRegistration:
-    """Test user registration flow."""
-
-    @pytest.mark.asyncio
-    async def test_register_new_user_success(self, auth_service, mock_session):
-        """Test successful user registration."""
-        # Mock get_user_by_email to return None (email doesn't exist)
-        auth_service.get_user_by_email = AsyncMock(return_value=None)
-
-        # Mock user creation and role assignment
-        mock_usuario = MagicMock()
-        mock_usuario.id = 123
-        mock_usuario.nombre = "Juan Pérez"
-        mock_usuario.email = "juan@example.com"
-        mock_usuario.numero_telefono = "+541234567890"
-        mock_usuario.created_at = datetime.now(timezone.utc)
-        mock_usuario.updated_at = datetime.now(timezone.utc)
-
-        # Mock flush to set the ID
-        async def mock_flush(*args, **kwargs):
-            pass
-
-        mock_session.flush = AsyncMock(side_effect=mock_flush)
-        mock_session.add = MagicMock()
-
-        # Mock role retrieval
-        mock_role = MagicMock()
-        mock_role.id = 2
-        mock_role.nombre = "customer"
-
-        mock_session.execute = AsyncMock()
-
-        # Register request
-        request = RegisterRequest(
-            nombre="Juan Pérez",
-            email="juan@example.com",
-            password="SecurePass123",
-            numero_telefono="+541234567890",
-        )
-
-        # Manually inject the user object instead of mocking the entire registration
-        # This tests the happy path logic
-        with patch.object(auth_service, "get_user_by_email", return_value=None):
-            # Mock the session behavior for user creation
-            mock_session.flush = AsyncMock()
-
-            # Simulate what register would do
-            try:
-                # This will fail because we haven't fully mocked everything,
-                # but that's OK - we're testing the individual components
-                pass
-            except Exception:
-                pass
-
-    @pytest.mark.asyncio
-    async def test_register_duplicate_email_raises_error(self, auth_service):
-        """Test that registering with duplicate email raises ValueError."""
-        # Mock get_user_by_email to return an existing user
-        existing_user = MagicMock()
-        auth_service.get_user_by_email = AsyncMock(return_value=existing_user)
-
-        request = RegisterRequest(
-            nombre="Juan Pérez",
-            email="existing@example.com",
-            password="SecurePass123",
-        )
-
-        # Should raise ValueError for duplicate email
-        with pytest.raises(ValueError, match="El email ya está registrado"):
-            await auth_service.register(request)
-
-
-class TestTokenDecoding:
-    """Test JWT token decoding."""
-
-    def test_decode_valid_token(self, auth_service):
-        """Test that decode_token correctly decodes a valid token."""
-        from jose import jwt
-
-        # Create a token
-        payload = {
-            "user_id": 42,
-            "email": "user@example.com",
-            "roles": ["customer"],
+    def test_decode_expired_token_returns_none(self, service, mock_settings):
+        expired_payload = {
+            "user_id": 1,
+            "email": "a@b.com",
+            "roles": [],
+            "exp": (datetime.now(timezone.utc) - timedelta(hours=1)).timestamp(),
+            "iat": (datetime.now(timezone.utc) - timedelta(hours=2)).timestamp(),
         }
+        token = jwt.encode(expired_payload, mock_settings.SECRET_KEY, algorithm="HS256")
+        assert service.decode_access_token(token) is None
 
-        token = jwt.encode(
-            payload,
-            auth_service.settings.SECRET_KEY,
-            algorithm=auth_service.settings.ALGORITHM,
-        )
+    def test_decode_wrong_secret_returns_none(self, service):
+        payload = {
+            "user_id": 1,
+            "email": "a@b.com",
+            "roles": [],
+            "exp": (datetime.now(timezone.utc) + timedelta(hours=1)).timestamp(),
+            "iat": datetime.now(timezone.utc).timestamp(),
+        }
+        token = jwt.encode(payload, "wrong-secret", algorithm="HS256")
+        assert service.decode_access_token(token) is None
 
-        # Decode it
-        decoded = auth_service.decode_token(token)
 
-        assert decoded is not None
-        assert decoded.user_id == 42
-        assert decoded.email == "user@example.com"
-        assert decoded.roles == ["customer"]
+# ============================================================================
+# Login (task 5.1)
+# ============================================================================
 
-    def test_decode_invalid_token_returns_none(self, auth_service):
-        """Test that decode_token returns None for invalid token."""
-        invalid_token = "not.a.valid.token"
 
-        decoded = auth_service.decode_token(invalid_token)
+class TestLogin:
+    async def test_login_success_returns_token_response(self, service, mock_session):
+        user = make_user()
+        # Mock get_user_by_email
+        result = MagicMock()
+        result.scalars.return_value.first.return_value = user
+        mock_session.execute.return_value = result
 
-        assert decoded is None
+        # Mock get_user_roles
+        roles_result = MagicMock()
+        roles_result.scalars.return_value.all.return_value = []
+        mock_session.execute.side_effect = [result, roles_result, roles_result]
 
-    def test_decode_malformed_token_returns_none(self, auth_service):
-        """Test that decode_token returns None for malformed token."""
-        malformed_token = "only.two.parts"
+        with patch.object(service, "get_user_by_email", AsyncMock(return_value=user)), \
+             patch.object(service, "get_user_roles", AsyncMock(return_value=["customer"])), \
+             patch.object(service, "_create_refresh_token_record", AsyncMock(return_value=("raw-token", MagicMock()))):
+            resp = await service.login("user@example.com", "ValidPass123!")
 
-        decoded = auth_service.decode_token(malformed_token)
+        assert resp.access_token
+        assert resp.refresh_token == "raw-token"
+        assert resp.user.email == "user@example.com"
 
-        assert decoded is None
+    async def test_login_wrong_password_raises_value_error(self, service):
+        user = make_user()
+        with patch.object(service, "get_user_by_email", AsyncMock(return_value=user)):
+            with pytest.raises(ValueError, match="Invalid credentials"):
+                await service.login("user@example.com", "WrongPassword!")
+
+    async def test_login_user_not_found_raises_value_error(self, service):
+        with patch.object(service, "get_user_by_email", AsyncMock(return_value=None)):
+            with pytest.raises(ValueError, match="Invalid credentials"):
+                await service.login("nobody@example.com", "AnyPass123!")
+
+
+# ============================================================================
+# Refresh + rotation (task 5.2)
+# ============================================================================
+
+
+class TestRefreshRotation:
+    async def test_valid_token_rotates_successfully(self, service):
+        raw, rt = make_refresh_token()
+        user = make_user(user_id=rt.usuario_id)
+
+        with patch.object(service.token_repo, "get_by_token_hash", AsyncMock(return_value=rt)), \
+             patch.object(service, "get_user_by_id", AsyncMock(return_value=user)), \
+             patch.object(service, "get_user_roles", AsyncMock(return_value=["customer"])), \
+             patch.object(service.token_repo, "revoke_family_single", AsyncMock()), \
+             patch.object(service, "_create_refresh_token_record", AsyncMock(return_value=("new-raw", MagicMock(id=99)))), \
+             patch.object(service.token_repo, "link_replaced_by", AsyncMock()), \
+             patch.object(service, "_build_user_response", AsyncMock(return_value=MagicMock(id=user.id, email=user.email, nombre=user.nombre, numero_telefono=None, roles=["customer"], creado_en=user.created_at, actualizado_en=user.updated_at))):
+            resp = await service.refresh(raw)
+
+        assert resp.refresh_token == "new-raw"
+        assert resp.access_token
+        service.token_repo.revoke_family_single.assert_awaited_once_with(rt.id)
+        service.token_repo.link_replaced_by.assert_awaited_once()
+
+    async def test_expired_token_raises_value_error(self, service):
+        raw, rt = make_refresh_token(expired=True)
+
+        with patch.object(service.token_repo, "get_by_token_hash", AsyncMock(return_value=rt)):
+            with pytest.raises(ValueError, match="expired"):
+                await service.refresh(raw)
+
+    async def test_nonexistent_token_raises_value_error(self, service):
+        with patch.object(service.token_repo, "get_by_token_hash", AsyncMock(return_value=None)):
+            with pytest.raises(ValueError, match="Invalid refresh token"):
+                await service.refresh(str(uuid.uuid4()))
+
+
+# ============================================================================
+# Replay detection (task 5.2)
+# ============================================================================
+
+
+class TestReplayDetection:
+    async def test_revoked_token_triggers_family_revocation(self, service):
+        """Using a revoked token must revoke the entire family and raise 401."""
+        raw, rt = make_refresh_token(revoked=True)
+
+        with patch.object(service.token_repo, "get_by_token_hash", AsyncMock(return_value=rt)), \
+             patch.object(service.token_repo, "revoke_family", AsyncMock()) as mock_revoke:
+            with pytest.raises(ValueError, match="reuse detected"):
+                await service.refresh(raw)
+
+        mock_revoke.assert_awaited_once_with(rt.family_id)
+
+    async def test_replay_does_not_issue_new_token(self, service):
+        """On replay, _create_refresh_token_record must NOT be called."""
+        raw, rt = make_refresh_token(revoked=True)
+
+        with patch.object(service.token_repo, "get_by_token_hash", AsyncMock(return_value=rt)), \
+             patch.object(service.token_repo, "revoke_family", AsyncMock()), \
+             patch.object(service, "_create_refresh_token_record", AsyncMock()) as mock_create:
+            with pytest.raises(ValueError):
+                await service.refresh(raw)
+
+        mock_create.assert_not_awaited()
+
+    async def test_two_tokens_same_family_replay_revokes_all(self, service):
+        """If an old token from a family is reused, the whole family is nuked."""
+        family_id = str(uuid.uuid4())
+        raw, rt = make_refresh_token(revoked=True, family_id=family_id)
+
+        with patch.object(service.token_repo, "get_by_token_hash", AsyncMock(return_value=rt)), \
+             patch.object(service.token_repo, "revoke_family", AsyncMock()) as mock_rf:
+            with pytest.raises(ValueError):
+                await service.refresh(raw)
+
+        mock_rf.assert_awaited_once_with(family_id)
+
+
+# ============================================================================
+# Logout (task 5.1)
+# ============================================================================
+
+
+class TestLogout:
+    async def test_logout_revokes_token(self, service):
+        raw, rt = make_refresh_token()
+
+        with patch.object(service.token_repo, "get_by_token_hash", AsyncMock(return_value=rt)), \
+             patch.object(service.token_repo, "revoke_family_single", AsyncMock()) as mock_rev:
+            await service.logout(raw)
+
+        mock_rev.assert_awaited_once_with(rt.id)
+
+    async def test_logout_already_revoked_is_idempotent(self, service):
+        """Calling logout on an already-revoked token should NOT call revoke again."""
+        raw, rt = make_refresh_token(revoked=True)
+
+        with patch.object(service.token_repo, "get_by_token_hash", AsyncMock(return_value=rt)), \
+             patch.object(service.token_repo, "revoke_family_single", AsyncMock()) as mock_rev:
+            await service.logout(raw)
+
+        mock_rev.assert_not_awaited()
+
+    async def test_logout_unknown_token_is_idempotent(self, service):
+        """Calling logout with an unknown token should not raise."""
+        with patch.object(service.token_repo, "get_by_token_hash", AsyncMock(return_value=None)), \
+             patch.object(service.token_repo, "revoke_family_single", AsyncMock()) as mock_rev:
+            await service.logout("unknown-raw-token")
+
+        mock_rev.assert_not_awaited()
+
+
+# ============================================================================
+# get_current_user / /me (task 5.1)
+# ============================================================================
+
+
+class TestGetCurrentUser:
+    async def test_valid_token_returns_user(self, service):
+        user = make_user()
+        token = service.create_access_token(user.id, user.email, ["customer"])
+
+        with patch.object(service, "get_user_by_id", AsyncMock(return_value=user)):
+            result = await service.get_current_user(token)
+
+        assert result.id == user.id
+
+    async def test_invalid_token_raises_value_error(self, service):
+        with pytest.raises(ValueError, match="Invalid or expired"):
+            await service.get_current_user("bad.token.here")
+
+    async def test_inactive_user_raises_value_error(self, service):
+        user = make_user()
+        user.activo = False
+        token = service.create_access_token(user.id, user.email, ["customer"])
+
+        with patch.object(service, "get_user_by_id", AsyncMock(return_value=user)):
+            with pytest.raises(ValueError, match="inactive"):
+                await service.get_current_user(token)

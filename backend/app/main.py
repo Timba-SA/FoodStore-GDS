@@ -4,9 +4,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.core.config import get_settings
 from app.core.middleware import setup_middleware
+from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 from app.modules.auth.router import router as auth_router
 
 
@@ -44,6 +47,11 @@ def create_app() -> FastAPI:
 
     # Setup middleware
     setup_middleware(app)
+
+    # Rate limiting — limiter on state + SlowAPI middleware + 429 handler
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+    app.add_middleware(SlowAPIMiddleware)
 
     # Include routers
     app.include_router(auth_router, prefix=settings.API_V1_STR)

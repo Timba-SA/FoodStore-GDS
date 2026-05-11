@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
 import App from '../App'
 import RegisterPage from '../../pages/RegisterPage'
+import CategoriasPage from '../../pages/CategoriasPage'
 import ProtectedRoute from '../../shared/components/ProtectedRoute'
 
 // Pages
@@ -82,6 +83,15 @@ export const router = createBrowserRouter([
           {
             path: 'dashboard',
             element: <DashboardPage />,
+          },
+        ],
+      },
+      {
+        element: <ProtectedRoute allowedRoles={['admin', 'stock']} />,
+        children: [
+          {
+            path: 'admin/categorias',
+            element: <CategoriasPage />,
           },
         ],
       },

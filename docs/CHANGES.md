@@ -509,13 +509,13 @@ Implementación de categorías jerárquicas con soporte para relaciones padre-hi
   - Confirmación antes de eliminar
 
 ### Criterios de Aceptación Resumidos
-- [ ] Crear categoría con nombre obligatorio, padre opcional
-- [ ] Listar como árbol jerárquico (anidado)
-- [ ] Validar: no ciclos, no auto-padre
-- [ ] Editar nombre o jerarquía (con validación)
-- [ ] Soft delete si no tiene productos activos
-- [ ] Query CTE recursivo eficiente
-- [ ] Frontend renderiza árbol visual
+- [x] Crear categoría con nombre obligatorio, padre opcional
+- [x] Listar como árbol jerárquico (anidado)
+- [x] Validar: no ciclos, no auto-padre
+- [x] Editar nombre o jerarquía (con validación)
+- [x] Soft delete si no tiene productos activos
+- [x] Query CTE recursivo eficiente
+- [x] Frontend renderiza árbol visual
 
 ### Reglas de Negocio Relevantes
 - RN-CA01: Jerarquía recursiva vía FK self-referencing

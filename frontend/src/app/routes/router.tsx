@@ -3,6 +3,8 @@ import App from '../App'
 import RegisterPage from '../../pages/RegisterPage'
 import CategoriasPage from '../../pages/CategoriasPage'
 import IngredientesPage from '../../pages/IngredientesPage'
+import CatalogoPage from '../../pages/CatalogoPage'
+import AdminProductosPage from '../../pages/AdminProductosPage'
 import ProtectedRoute from '../../shared/components/ProtectedRoute'
 
 // Pages
@@ -79,6 +81,10 @@ export const router = createBrowserRouter([
         element: <ForbiddenPage />,
       },
       {
+        path: 'catalogo',
+        element: <CatalogoPage />,
+      },
+      {
         element: <ProtectedRoute />,
         children: [
           {
@@ -97,6 +103,10 @@ export const router = createBrowserRouter([
           {
             path: 'admin/ingredientes',
             element: <IngredientesPage />,
+          },
+          {
+            path: 'admin/productos',
+            element: <AdminProductosPage />,
           },
         ],
       },

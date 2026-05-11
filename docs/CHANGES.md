@@ -629,17 +629,17 @@ Implementación del catálogo completo de productos con precio, stock, disponibi
   - Detalle: modal o página con full info + agregación al carrito
 
 ### Criterios de Aceptación Resumidos
-- [ ] Crear producto con precio DECIMAL, stock INTEGER, disponible BOOLEAN
-- [ ] Asociar múltiples categorías (M2M)
-- [ ] Asociar múltiples ingredientes (M2M)
-- [ ] Listar público: solo disponibles, no eliminados
-- [ ] Detalle incluye categorías + ingredientes con alérgenos
-- [ ] Stock actualizable solo por STOCK/ADMIN
-- [ ] Soft delete
-- [ ] Búsqueda por nombre con ILIKE
-- [ ] Filtro por categoría, precio, sin alergenos
-- [ ] Paginación skip/limit
-- [ ] Frontend: búsqueda con debounce, skeleton loaders
+- [x] Crear producto con precio DECIMAL, stock INTEGER, disponible BOOLEAN
+- [x] Asociar múltiples categorías (M2M)
+- [x] Asociar múltiples ingredientes (M2M)
+- [x] Listar público: solo disponibles, no eliminados
+- [x] Detalle incluye categorías + ingredientes con alérgenos
+- [x] Stock actualizable solo por STOCK/ADMIN
+- [x] Soft delete
+- [x] Búsqueda por nombre con ILIKE
+- [x] Filtro por categoría, precio, sin alergenos
+- [x] Paginación skip/limit
+- [x] Frontend: búsqueda con debounce, skeleton loaders
 
 ### Reglas de Negocio Relevantes
 - RN-CA04: Precio como DECIMAL(10,2), no float

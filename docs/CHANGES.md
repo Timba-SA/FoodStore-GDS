@@ -86,10 +86,10 @@ Scaffolding completo del monorepo con estructura de directorios, configuración 
 - Inicialización de git con commits progresivos
 
 ### Criterios de Aceptación Resumidos
-- [ ] Repositorio Git con estructura monorepo clara
-- [ ] `.gitignore` excluye archivos sensibles
-- [ ] README.md con instrucciones básicas funcionando
-- [ ] Historial de Git muestra commits atómicos progresivos
+- [x] Repositorio Git con estructura monorepo clara
+- [x] `.gitignore` excluye archivos sensibles
+- [x] README.md con instrucciones básicas funcionando
+- [x] Historial de Git muestra commits atómicos progresivos
 
 ### Reglas de Negocio Relevantes
 - RN-DA01: Campos de auditoría en todas las tablas
@@ -133,14 +133,14 @@ Instalación y configuración completa del backend con FastAPI, SQLModel, Alembi
 - Dependencias FastAPI: `get_current_user`, `require_role()`
 
 ### Criterios de Aceptación Resumidos
-- [ ] `pip install -r requirements.txt` sin errores
-- [ ] `uvicorn app.main:app --reload` arranca en puerto 8000
-- [ ] Swagger UI accesible en `/docs`
-- [ ] CORS permite `http://localhost:5173`
-- [ ] BaseRepository[T] implementado con métodos: get_by_id, list_all, count, create, update, soft_delete, hard_delete
-- [ ] UnitOfWork como context manager con commit/rollback automático
-- [ ] `get_current_user` extrae y valida JWT
-- [ ] `require_role()` verifica roles y lanza 403
+- [x] `pip install -r requirements.txt` sin errores
+- [x] `uvicorn app.main:app --reload` arranca en puerto 8000
+- [x] Swagger UI accesible en `/docs`
+- [x] CORS permite `http://localhost:5173`
+- [x] BaseRepository[T] implementado con métodos: get_by_id, list_all, count, create, update, soft_delete, hard_delete
+- [x] UnitOfWork como context manager con commit/rollback automático
+- [x] `get_current_user` extrae y valida JWT
+- [x] `require_role()` verifica roles y lanza 403
 
 ### Reglas de Negocio Relevantes
 - RN-AU02: JWT access token de 30 minutos con HS256
@@ -188,13 +188,13 @@ Configuración de PostgreSQL, creación de todas las tablas mediante Alembic (mi
 - Idempotencia: ejecutar seed múltiples veces no duplica datos (INSERT ... ON CONFLICT DO NOTHING)
 
 ### Criterios de Aceptación Resumidos
-- [ ] `alembic upgrade head` crea todas las 16 tablas sin errores
-- [ ] Todas las tablas tienen campos de auditoría: `creado_en`, `actualizado_en`
-- [ ] Soft delete implementado con `eliminado_en` (nullable timestamp)
-- [ ] Constraints: UNIQUE en email, FK autorefencial en Categoria, M2M en UsuarioRol
-- [ ] `python -m scripts.seed` carga 4 roles, 6 estados, 3 formas pago, 1 usuario admin
-- [ ] Ejecutar seed 2 veces no duplica datos (idempotencia)
-- [ ] `alembic downgrade -1` revierte sin errores
+- [x] `alembic upgrade head` crea todas las 16 tablas sin errores
+- [x] Todas las tablas tienen campos de auditoría: `creado_en`, `actualizado_en`
+- [x] Soft delete implementado con `eliminado_en` (nullable timestamp)
+- [x] Constraints: UNIQUE en email, FK autorefencial en Categoria, M2M en UsuarioRol
+- [x] `python -m scripts.seed` carga 4 roles, 6 estados, 3 formas pago, 1 usuario admin
+- [x] Ejecutar seed 2 veces no duplica datos (idempotencia)
+- [x] `alembic downgrade -1` revierte sin errores
 
 ### Reglas de Negocio Relevantes
 - RN-DA01: Campos `creado_en` y `actualizado_en` con defaults NOW()
@@ -248,14 +248,14 @@ Setup completo del frontend con React, TypeScript, Vite, Tailwind CSS, TanStack 
 - `.env.example` con: `VITE_API_BASE_URL`, `VITE_MERCADOPAGO_PUBLIC_KEY`
 
 ### Criterios de Aceptación Resumidos
-- [ ] `npm install` sin errores
-- [ ] `npm run dev` arranca servidor en puerto 5173
-- [ ] `npm run build` genera dist sin errores
-- [ ] TypeScript `strict: true` sin warnings
-- [ ] Tailwind CSS funciona en componentes
-- [ ] Axios instancia centralizada con interceptores
-- [ ] QueryClientProvider envuelve App
-- [ ] `.env.example` documentado
+- [x] `npm install` sin errores
+- [x] `npm run dev` arranca servidor en puerto 5173
+- [x] `npm run build` genera dist sin errores
+- [x] TypeScript `strict: true` sin warnings
+- [x] Tailwind CSS funciona en componentes
+- [x] Axios instancia centralizada con interceptores
+- [x] QueryClientProvider envuelve App
+- [x] `.env.example` documentado
 
 ### Reglas de Negocio Relevantes
 - RN-AU02: Access token de 30 min, refresh de 7 días
@@ -310,13 +310,13 @@ Implementación de los cuatro stores Zustand base (authStore, cartStore, payment
   - Persistencia: solo `theme`
 
 ### Criterios de Aceptación Resumidos
-- [ ] 4 stores implementados en `src/shared/stores/`
-- [ ] authStore con persistencia de accessToken
-- [ ] cartStore con persistencia de items
-- [ ] paymentStore sin persistencia
-- [ ] Todos tipados con TypeScript (sin `any`)
-- [ ] Suscripción por slice (selectores con callbacks)
-- [ ] `useStore.getState()` funciona fuera de React (para interceptor Axios)
+- [x] 4 stores implementados en `src/shared/stores/`
+- [x] authStore con persistencia de accessToken
+- [x] cartStore con persistencia de items
+- [x] paymentStore sin persistencia
+- [x] Todos tipados con TypeScript (sin `any`)
+- [x] Suscripción por slice (selectores con callbacks)
+- [x] `useStore.getState()` funciona fuera de React (para interceptor Axios)
 
 ### Reglas de Negocio Relevantes
 - RN-CR02: Carrito persiste al cerrar navegador y logout
@@ -1053,7 +1053,7 @@ Implementación del dashboard administrativo con métricas, gráficos de negocio
 - [x] Ver registros eliminados
 - [x] Editar perfil propio
 - [x] Cambiar contraseña
-- [ ] Paginación, búsqueda, filtros
+- [x] Paginación, búsqueda, filtros
 
 ### Reglas de Negocio Relevantes
 - RN-RB03: Solo ADMIN asigna roles

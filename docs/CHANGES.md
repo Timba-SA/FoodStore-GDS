@@ -851,16 +851,16 @@ Implementación completa del dominio de pedidos: creación atómica desde carrit
   - Cancelación: solo si permite (PENDIENTE o CONFIRMADO)
 
 ### Criterios de Aceptación Resumidos
-- [ ] Crear pedido UoW atómico (todo o nada)
-- [ ] Validación: usuario, dirección ownership, productos disponibles, stock suficiente
-- [ ] Snapshots: precio_snapshot, nombre_snapshot, direccion_snapshot
-- [ ] Pedido nace en PENDIENTE con historial inicial
-- [ ] Máquina de estados: PENDIENTE→CONFIRMADO→EN_PREP→EN_CAMINO→ENTREGADO
-- [ ] Cancelación desde PENDIENTE, CONFIRMADO, EN_PREP (solo ADMIN)
-- [ ] Restauración de stock en cancelación (si CONFIRMADO)
-- [ ] Historial append-only (nunca UPDATE/DELETE)
-- [ ] Listado: CLIENT ve solo suyo, PEDIDOS/ADMIN ven todos
-- [ ] Frontend: crear, listar, detalle, cancelar, timeline visual
+- [x] Crear pedido UoW atómico (todo o nada)
+- [x] Validación: usuario, dirección ownership, productos disponibles, stock suficiente
+- [x] Snapshots: precio_snapshot, nombre_snapshot, direccion_snapshot
+- [x] Pedido nace en PENDIENTE con historial inicial
+- [x] Máquina de estados: PENDIENTE→CONFIRMADO→EN_PREP→EN_CAMINO→ENTREGADO
+- [x] Cancelación desde PENDIENTE, CONFIRMADO, EN_PREP (solo ADMIN)
+- [x] Restauración de stock en cancelación (si CONFIRMADO)
+- [x] Historial append-only (nunca UPDATE/DELETE)
+- [x] Listado: CLIENT ve solo suyo, PEDIDOS/ADMIN ven todos
+- [x] Frontend: crear, listar, detalle, cancelar, timeline visual
 
 ### Reglas de Negocio Relevantes
 - RN-PE01: Creación ATÓMICA con UoW

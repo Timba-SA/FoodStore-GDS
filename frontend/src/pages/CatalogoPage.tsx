@@ -5,6 +5,8 @@
 import { useState, useCallback } from 'react'
 import { useProductos } from '@/entities/producto/hooks'
 import ProductoCard from '@/features/productos/ProductoCard'
+import ProductoDetailModal from '@/features/productos/ProductoDetailModal'
+import CartDrawer from '@/features/cart/CartDrawer'
 import type { Producto, ProductosFilters } from '@/entities/producto/types'
 
 // Minimal debounce hook
@@ -34,9 +36,11 @@ export default function CatalogoPage() {
 
   const { data: productos = [], isLoading, isError } = useProductos(filters)
 
+  const [selectedProducto, setSelectedProducto] = useState<Producto | null>(null)
+  const [cartOpen, setCartOpen] = useState(false)
+
   function handleAddToCart(producto: Producto) {
-    // Placeholder — will be wired to cart store in future change
-    alert(`Agregado al carrito: ${producto.nombre}`)
+    setSelectedProducto(producto)
   }
 
   return (
@@ -159,6 +163,18 @@ export default function CatalogoPage() {
           )}
         </main>
       </div>
+
+      {/* Product detail modal */}
+      {selectedProducto && (
+        <ProductoDetailModal
+          producto={selectedProducto}
+          onClose={() => setSelectedProducto(null)}
+          onCartOpen={() => setCartOpen(true)}
+        />
+      )}
+
+      {/* Cart drawer */}
+      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
     </div>
   )
 }

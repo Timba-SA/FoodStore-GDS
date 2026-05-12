@@ -756,15 +756,15 @@ Implementación del carrito de compras 100% client-side usando Zustand + localSt
   - Persistencia: survives reload, logout/login, cierre navegador
 
 ### Criterios de Aceptación Resumidos
-- [ ] Carrito solo client-side (no backend)
-- [ ] Persistencia en localStorage
-- [ ] Agregar producto: incremente qty si existe
-- [ ] Personalización: excluir ingredientes (solo los que tiene el producto)
-- [ ] Modificar cantidad: update en carrito
-- [ ] Eliminar ítem: remove
-- [ ] Limpiar: reset
-- [ ] Cálculos: subtotal, total correcto
-- [ ] Persiste tras reload/logout/cierre navegador
+- [x] Carrito solo client-side (no backend)
+- [x] Persistencia en localStorage
+- [x] Agregar producto: incremente qty si existe
+- [x] Personalización: excluir ingredientes (solo los que tiene el producto)
+- [x] Modificar cantidad: update en carrito
+- [x] Eliminar ítem: remove
+- [x] Limpiar: reset
+- [x] Cálculos: subtotal, total correcto
+- [x] Persiste tras reload/logout/cierre navegador
 
 ### Reglas de Negocio Relevantes
 - RN-CR01: Carrito client-side only

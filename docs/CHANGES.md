@@ -1041,18 +1041,18 @@ Implementación del dashboard administrativo con métricas, gráficos de negocio
   - Page `/cambiar-contrasena`: formulario de cambio de password
 
 ### Criterios de Aceptación Resumidos
-- [ ] Dashboard con 4 KPIs principales
-- [ ] Gráficos recharts: línea (ventas), barra (productos), pie (estados)
-- [ ] CRUD usuarios funcional (solo ADMIN)
-- [ ] Asignación de roles
-- [ ] Soft delete usuarios
-- [ ] CRUD productos desde admin
-- [ ] CRUD categorías
-- [ ] Gestión de stock
-- [ ] Gestión de pedidos (cambiar estado)
-- [ ] Ver registros eliminados
-- [ ] Editar perfil propio
-- [ ] Cambiar contraseña
+- [x] Dashboard con 4 KPIs principales
+- [x] Gráficos recharts: línea (ventas), barra (productos), pie (estados)
+- [x] CRUD usuarios funcional (solo ADMIN)
+- [x] Asignación de roles
+- [x] Soft delete usuarios
+- [x] CRUD productos desde admin
+- [x] CRUD categorías
+- [x] Gestión de stock
+- [x] Gestión de pedidos (cambiar estado)
+- [x] Ver registros eliminados
+- [x] Editar perfil propio
+- [x] Cambiar contraseña
 - [ ] Paginación, búsqueda, filtros
 
 ### Reglas de Negocio Relevantes

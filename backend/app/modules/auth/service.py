@@ -210,6 +210,8 @@ class AuthService:
         user = await self.get_user_by_email(email)
         if not user or not self.verify_password(password, user.hashed_password):
             raise ValueError("Invalid credentials")
+        if user.deleted_at is not None:
+            raise ValueError("Invalid credentials")
 
         roles = await self.get_user_roles(user.id)
         access_token = self.create_access_token(

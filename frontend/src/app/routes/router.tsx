@@ -8,6 +8,11 @@ import AdminProductosPage from '../../pages/AdminProductosPage'
 import MisDireccionesPage from '../../pages/MisDireccionesPage'
 import MisPedidosPage from '../../pages/MisPedidosPage'
 import CheckoutPage from '../../pages/CheckoutPage'
+import AdminDashboardPage from '../../pages/AdminDashboardPage'
+import AdminUsuariosPage from '../../pages/AdminUsuariosPage'
+import AdminStockPage from '../../pages/AdminStockPage'
+import AdminPedidosPage from '../../pages/AdminPedidosPage'
+import PerfilPage from '../../pages/PerfilPage'
 import ProtectedRoute from '../../shared/components/ProtectedRoute'
 
 // Pages
@@ -106,6 +111,27 @@ export const router = createBrowserRouter([
             path: 'dashboard/pedidos/:id/pagar',
             element: <CheckoutPage />,
           },
+          {
+            path: 'perfil',
+            element: <PerfilPage />,
+          },
+        ],
+      },
+      {
+        element: <ProtectedRoute allowedRoles={['admin']} />,
+        children: [
+          {
+            path: 'admin/dashboard',
+            element: <AdminDashboardPage />,
+          },
+          {
+            path: 'admin/usuarios',
+            element: <AdminUsuariosPage />,
+          },
+          {
+            path: 'admin/pedidos',
+            element: <AdminPedidosPage />,
+          },
         ],
       },
       {
@@ -122,6 +148,10 @@ export const router = createBrowserRouter([
           {
             path: 'admin/productos',
             element: <AdminProductosPage />,
+          },
+          {
+            path: 'admin/stock',
+            element: <AdminStockPage />,
           },
         ],
       },

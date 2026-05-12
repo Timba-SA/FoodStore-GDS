@@ -18,6 +18,7 @@ from app.modules.productos.router import router as productos_router
 from app.modules.direcciones.router import router as direcciones_router
 from app.modules.pedidos.router import router as pedidos_router
 from app.modules.pagos.router import router as pagos_router
+from app.modules.perfil.router import router as perfil_router
 
 
 @asynccontextmanager
@@ -69,6 +70,7 @@ def create_app() -> FastAPI:
     app.include_router(direcciones_router, prefix=settings.API_V1_STR)
     app.include_router(pedidos_router, prefix=settings.API_V1_STR)
     app.include_router(pagos_router, prefix=settings.API_V1_STR)
+    app.include_router(perfil_router, prefix=settings.API_V1_STR)
 
     # Health check endpoint
     @app.get("/health", tags=["health"])

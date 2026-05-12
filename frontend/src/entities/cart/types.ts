@@ -18,10 +18,14 @@ export interface CartItem {
 
 export interface CartState {
   items: CartItem[]
+  drawerOpen: boolean
   addItem: (producto: Producto, cantidad: number, personalizacion: number[]) => void
   removeItem: (id: string) => void
   updateQuantity: (id: string, cantidad: number) => void
   clearCart: () => void
   getTotalItems: () => number
   getSubtotal: () => number
+  openDrawer: () => void
+  closeDrawer: () => void
 }
+

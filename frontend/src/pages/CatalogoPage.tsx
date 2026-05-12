@@ -6,7 +6,6 @@ import { useState, useCallback } from 'react'
 import { useProductos } from '@/entities/producto/hooks'
 import ProductoCard from '@/features/productos/ProductoCard'
 import ProductoDetailModal from '@/features/productos/ProductoDetailModal'
-import CartDrawer from '@/features/cart/CartDrawer'
 import type { Producto, ProductosFilters } from '@/entities/producto/types'
 
 // Minimal debounce hook
@@ -37,21 +36,13 @@ export default function CatalogoPage() {
   const { data: productos = [], isLoading, isError } = useProductos(filters)
 
   const [selectedProducto, setSelectedProducto] = useState<Producto | null>(null)
-  const [cartOpen, setCartOpen] = useState(false)
 
   function handleAddToCart(producto: Producto) {
     setSelectedProducto(producto)
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero banner */}
-      <header className="bg-gradient-to-r from-orange-600 to-amber-500 text-white px-8 py-12">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-4xl font-extrabold mb-2">Nuestro Catálogo</h1>
-          <p className="text-orange-100 text-lg">Explorá todos nuestros productos frescos y deliciosos</p>
-        </div>
-      </header>
+    <div className="bg-gray-50 flex-1">
 
       <div className="max-w-6xl mx-auto px-8 py-8 flex gap-8">
         {/* Sidebar filters */}
@@ -169,12 +160,8 @@ export default function CatalogoPage() {
         <ProductoDetailModal
           producto={selectedProducto}
           onClose={() => setSelectedProducto(null)}
-          onCartOpen={() => setCartOpen(true)}
         />
       )}
-
-      {/* Cart drawer */}
-      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
     </div>
   )
 }

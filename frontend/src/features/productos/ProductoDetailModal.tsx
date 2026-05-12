@@ -15,11 +15,11 @@ import { useCartStore } from '@/entities/cart/store'
 interface Props {
   producto: Producto
   onClose: () => void
-  onCartOpen: () => void
 }
 
-export default function ProductoDetailModal({ producto, onClose, onCartOpen }: Props) {
+export default function ProductoDetailModal({ producto, onClose }: Props) {
   const addItem = useCartStore((s) => s.addItem)
+  const openDrawer = useCartStore((s) => s.openDrawer)
   const [cantidad, setCantidad] = useState(1)
   const [excludedIds, setExcludedIds] = useState<number[]>([])
 
@@ -32,7 +32,7 @@ export default function ProductoDetailModal({ producto, onClose, onCartOpen }: P
   function handleAdd() {
     addItem(producto, cantidad, excludedIds)
     onClose()
-    onCartOpen()
+    openDrawer()
   }
 
   const hasIngredientes = producto.ingredientes.length > 0

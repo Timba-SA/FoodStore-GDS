@@ -28,6 +28,7 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      drawerOpen: false,
 
       // ------------------------------------------------------------------
       // addItem
@@ -97,10 +98,16 @@ export const useCartStore = create<CartState>()(
           (acc, item) => acc + parseFloat(item.producto.precio) * item.cantidad,
           0
         ),
+
+      // ------------------------------------------------------------------
+      // Cart drawer controls
+      // ------------------------------------------------------------------
+      openDrawer: () => set({ drawerOpen: true }),
+      closeDrawer: () => set({ drawerOpen: false }),
     }),
     {
       name: 'foodstore-cart', // localStorage key
-      // Only persist the items array — actions are always rehydrated from code
+      // Only persist the items array — actions and UI state always rehydrated from code
       partialize: (state) => ({ items: state.items }),
     }
   )

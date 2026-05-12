@@ -5,7 +5,7 @@
 
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  BarChart, Bar, PieChart, Pie, Cell, Legend,
+  BarChart, Bar, PieChart, Pie, Cell,
 } from 'recharts'
 import {
   useDashboardMetrics,
@@ -105,8 +105,8 @@ export default function AdminDashboardPage() {
                 />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip
-                  formatter={(v: number) =>
-                    `$${v.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
+                  formatter={(v: any) =>
+                    `$${Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
                   }
                 />
                 <Line
@@ -135,8 +135,8 @@ export default function AdminDashboardPage() {
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
-                  label={({ estado, percent }: { estado: string; percent: number }) =>
-                    `${estado} ${(percent * 100).toFixed(0)}%`
+                  label={({ name, percent }: any) =>
+                    `${name} ${(percent * 100).toFixed(0)}%`
                   }
                   labelLine={false}
                 >

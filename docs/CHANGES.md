@@ -1103,13 +1103,13 @@ Implementación de navegación y layout base compartido por toda la aplicación,
   - Responsive: sidebar colapsable en mobile
 
 ### Criterios de Aceptación Resumidos
-- [ ] Navbar con logo y menú contextual
-- [ ] Sidebar adapta opciones por rol
-- [ ] Layout: Navbar + Sidebar + Outlet
-- [ ] Sidebar colapsable en mobile
-- [ ] Links funcionan según rol
-- [ ] Logout desde user menu
-- [ ] Diseño responsive
+- [x] Navbar con logo y menú contextual
+- [x] Sidebar adapta opciones por rol
+- [x] Layout: Navbar + Sidebar + Outlet
+- [x] Sidebar colapsable en mobile
+- [x] Links funcionan según rol
+- [x] Logout desde user menu
+- [x] Diseño responsive
 
 ### Reglas de Negocio Relevantes
 - RN-RB06: STOCK sin acceso a pedidos/usuarios

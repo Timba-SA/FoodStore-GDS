@@ -250,7 +250,7 @@ class HistorialEstadoPedido(BaseModel, table=True):
 
 
 class Pago(BaseModel, table=True):
-    """Payment model."""
+    """Payment model (supports MercadoPago integration)."""
 
     __tablename__ = "pagos"
 
@@ -272,17 +272,33 @@ class Pago(BaseModel, table=True):
     referencia_externa: Optional[str] = Field(
         default=None,
         sa_column=Column(String(255)),
-        description="External payment reference (e.g., MercadoPago ID)",
+        description="External payment reference / external_reference sent to MP",
     )
     estado: str = Field(
         default="pendiente",
         sa_column=Column(String(50), nullable=False),
-        description="Payment status",
+        description="Internal payment status",
     )
     metadata_pago: Optional[str] = Field(
         default=None,
         sa_column=Column("metadata", Text),
         description="JSON metadata from payment provider",
+    )
+    # MercadoPago-specific fields (added in migration b2c3d4e5f6a7)
+    mp_payment_id: Optional[str] = Field(
+        default=None,
+        sa_column=Column(String(100), nullable=True),
+        description="Payment ID returned by MercadoPago SDK",
+    )
+    mp_status: Optional[str] = Field(
+        default=None,
+        sa_column=Column(String(50), nullable=True),
+        description="MercadoPago payment status: approved, rejected, pending, in_process",
+    )
+    idempotency_key: Optional[str] = Field(
+        default=None,
+        sa_column=Column(String(36), nullable=True, unique=True),
+        description="UUID unique per payment attempt — prevents double-charge",
     )
 
     # Relationships
@@ -293,4 +309,5 @@ class Pago(BaseModel, table=True):
         Index("idx_pagos_pedido_id", "pedido_id"),
         Index("idx_pagos_forma_pago_id", "forma_pago_id"),
         Index("idx_pagos_referencia_externa", "referencia_externa"),
+        Index("idx_pagos_mp_payment_id", "mp_payment_id"),
     )

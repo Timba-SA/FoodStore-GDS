@@ -7,6 +7,7 @@ import CatalogoPage from '../../pages/CatalogoPage'
 import AdminProductosPage from '../../pages/AdminProductosPage'
 import MisDireccionesPage from '../../pages/MisDireccionesPage'
 import MisPedidosPage from '../../pages/MisPedidosPage'
+import CheckoutPage from '../../pages/CheckoutPage'
 import ProtectedRoute from '../../shared/components/ProtectedRoute'
 
 // Pages
@@ -100,6 +101,10 @@ export const router = createBrowserRouter([
           {
             path: 'dashboard/pedidos',
             element: <MisPedidosPage />,
+          },
+          {
+            path: 'dashboard/pedidos/:id/pagar',
+            element: <CheckoutPage />,
           },
         ],
       },

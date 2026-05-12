@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { usePedidos } from '@/entities/pedido/hooks'
 import PedidoDetailModal from '@/features/pedidos/PedidoDetailModal'
 
@@ -28,6 +29,7 @@ const ESTADO_ICONS: Record<string, string> = {
 export default function MisPedidosPage() {
   const { data: pedidos = [], isLoading } = usePedidos()
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const navigate = useNavigate()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -80,13 +82,22 @@ export default function MisPedidosPage() {
                       })}
                     </p>
                   </div>
-                  <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badgeCls}`}>
                       {icon} {p.estado_nombre.replace('_', ' ')}
                     </span>
                     <span className="font-bold text-gray-900 text-sm">
                       ${parseFloat(p.total).toFixed(2)}
                     </span>
+                    {p.estado_nombre === 'pendiente' && (
+                      <button
+                        id={`btn-pagar-${p.id}`}
+                        onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/pedidos/${p.id}/pagar`) }}
+                        className="text-xs bg-orange-600 text-white font-semibold px-3 py-1 rounded-lg hover:bg-orange-700 transition"
+                      >
+                        💳 Pagar
+                      </button>
+                    )}
                     <span className="text-gray-300 group-hover:text-orange-400 transition">›</span>
                   </div>
                 </button>

@@ -6,6 +6,7 @@ import IngredientesPage from '../../pages/IngredientesPage'
 import CatalogoPage from '../../pages/CatalogoPage'
 import AdminProductosPage from '../../pages/AdminProductosPage'
 import MisDireccionesPage from '../../pages/MisDireccionesPage'
+import MisPedidosPage from '../../pages/MisPedidosPage'
 import ProtectedRoute from '../../shared/components/ProtectedRoute'
 
 // Pages
@@ -95,6 +96,10 @@ export const router = createBrowserRouter([
           {
             path: 'dashboard/direcciones',
             element: <MisDireccionesPage />,
+          },
+          {
+            path: 'dashboard/pedidos',
+            element: <MisPedidosPage />,
           },
         ],
       },

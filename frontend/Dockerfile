@@ -1,10 +1,10 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm install --no-progress
 
 COPY . .
 RUN npm run build

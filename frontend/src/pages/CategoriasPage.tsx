@@ -17,7 +17,7 @@ import {
   useDeleteCategoria,
 } from '@/entities/categoria/hooks'
 import type { Categoria, CategoriaCreatePayload, CategoriaUpdatePayload } from '@/entities/categoria/types'
-import CategoriaForm from './CategoriaForm'
+import CategoriaForm from '@/features/categorias/CategoriaForm'
 
 // Indent indicator for hierarchical display in the table
 function HierarchyBadge({ parentId, all }: { parentId: number | null; all: Categoria[] }) {

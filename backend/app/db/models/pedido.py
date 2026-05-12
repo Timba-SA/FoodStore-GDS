@@ -6,7 +6,7 @@ from enum import Enum
 from datetime import datetime
 
 from sqlmodel import Field, Relationship, Column, String, Numeric, Text, DateTime, Enum as SQLEnum
-from sqlalchemy import Index
+from sqlalchemy import Index, JSON
 
 from app.db.base import BaseModel
 
@@ -127,6 +127,12 @@ class Pedido(BaseModel, table=True):
         foreign_key="direcciones_entrega.id",
         description="DireccionEntrega ID",
     )
+    # Snapshot of delivery address at order creation (US-038)
+    direccion_snapshot: Optional[dict] = Field(
+        default=None,
+        sa_column=Column(JSON, nullable=True),
+        description="Snapshot of delivery address at order time",
+    )
     notas: Optional[str] = Field(
         default=None,
         sa_column=Column(Text),
@@ -176,6 +182,18 @@ class DetallePedido(BaseModel, table=True):
         sa_column=Column(Numeric(10, 2), nullable=False),
         description="Line item subtotal",
     )
+    # Snapshots: capture product state at order time (US-037)
+    nombre_snapshot: Optional[str] = Field(
+        default=None,
+        sa_column=Column(String(255), nullable=True),
+        description="Product name snapshot at order time",
+    )
+    # Personalization: excluded ingredient IDs from cart (RN-CR05 / RN-PE05)
+    personalizacion: Optional[list] = Field(
+        default=None,
+        sa_column=Column(JSON, nullable=True),
+        description="List of excluded ingredient IDs",
+    )
 
     # Relationships
     pedido: Pedido = Relationship(back_populates="detalles_pedido")
@@ -201,7 +219,14 @@ class HistorialEstadoPedido(BaseModel, table=True):
     estado_id: int = Field(
         foreign_key="estados_pedido.id",
         nullable=False,
-        description="EstadoPedido ID",
+        description="EstadoPedido ID (estado_hacia)",
+    )
+    # Audit: who made the transition (NULL = system)
+    usuario_id: Optional[int] = Field(
+        default=None,
+        foreign_key="usuarios.id",
+        nullable=True,
+        description="User who triggered the transition (NULL = system)",
     )
     fecha_cambio: datetime = Field(
         default_factory=datetime.utcnow,

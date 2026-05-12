@@ -20,6 +20,7 @@ export default function App() {
               <li><Link to="/" className="text-gray-600 hover:text-gray-900 transition">Home</Link></li>
               <li><Link to="/catalogo" className="text-gray-600 hover:text-gray-900 transition">Catálogo</Link></li>
               <li><Link to="/dashboard" className="text-gray-600 hover:text-gray-900 transition">Dashboard</Link></li>
+              <li><Link to="/dashboard/pedidos" className="text-gray-600 hover:text-gray-900 transition">Mis Pedidos</Link></li>
               <li><Link to="/login" className="text-gray-600 hover:text-gray-900 transition">Login</Link></li>
             </ul>
 

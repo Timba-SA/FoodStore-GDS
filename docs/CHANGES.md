@@ -932,16 +932,16 @@ Integración completa con MercadoPago usando Checkout API (Orders), incluyendo t
   - Redirección: si aprobado → mostrar pedido confirmado, si rechazado → opción reintentar
 
 ### Criterios de Aceptación Resumidos
-- [ ] Crear orden en MercadoPago con SDK Python
-- [ ] Webhook IPN recibe notificación de pago
-- [ ] Validar firma de webhook
-- [ ] Idempotency key previene cobros duplicados
-- [ ] Pago aprobado → Pedido avanza a CONFIRMADO automáticamente
-- [ ] Stock decrementado en transición a CONFIRMADO
-- [ ] Pago rechazado → Pedido permanece PENDIENTE
-- [ ] Webhook responde 200 rápidamente
-- [ ] Frontend: tokenización segura, sin datos de tarjeta en nuestro servidor
-- [ ] Polling o polling-ws detecta confirmación
+- [x] Crear orden en MercadoPago con SDK Python
+- [x] Webhook IPN recibe notificación de pago
+- [x] Validar firma de webhook
+- [x] Idempotency key previene cobros duplicados
+- [x] Pago aprobado → Pedido avanza a CONFIRMADO automáticamente
+- [x] Stock decrementado en transición a CONFIRMADO
+- [x] Pago rechazado → Pedido permanece PENDIENTE
+- [x] Webhook responde 200 rápidamente
+- [x] Frontend: tokenización segura, sin datos de tarjeta en nuestro servidor
+- [x] Polling o polling-ws detecta confirmación
 
 ### Reglas de Negocio Relevantes
 - RN-AU09: Datos de tarjeta NUNCA tocan nuestro servidor (PCI DSS SAQ-A)

@@ -12,7 +12,6 @@ ENV/
 .gitignore
 .vscode
 .idea
-alembic/versions/*
 tests/
 README.md
 Dockerfile

@@ -34,16 +34,6 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: Callable):
         """Log request and response details."""
-        # Request info
-        request_body = b""
-        if request.method in ["POST", "PUT", "PATCH"]:
-            request_body = await request.body()
-            # Create a new receive callable that returns cached body
-            async def receive():
-                return {"type": "http.request", "body": request_body}
-
-            request._receive = receive
-
         # Start timer
         start_time = time.time()
 

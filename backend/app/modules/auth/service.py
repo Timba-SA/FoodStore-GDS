@@ -102,7 +102,7 @@ class AuthService:
 
         raw_token = str(uuid.uuid4())
         token_hash = self._hash_token(raw_token)
-        expires_at = datetime.now(timezone.utc) + timedelta(
+        expires_at = datetime.now() + timedelta(
             days=self.settings.REFRESH_TOKEN_EXPIRE_DAYS
         )
 

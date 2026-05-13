@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom'
 import App from '../App'
+import LoginPage from '../../pages/LoginPage'
 import RegisterPage from '../../pages/RegisterPage'
 import CategoriasPage from '../../pages/CategoriasPage'
 import IngredientesPage from '../../pages/IngredientesPage'
@@ -22,16 +23,7 @@ const HomePage = () => (
   </div>
 )
 
-const LoginPage = () => (
-  <div className="flex h-screen items-center justify-center bg-gray-50">
-    <div className="w-full max-w-md">
-      <h1 className="text-3xl font-bold text-center mb-8">Login</h1>
-      <div className="card">
-        <p className="text-gray-600 text-center">Login page coming soon...</p>
-      </div>
-    </div>
-  </div>
-)
+
 
 const DashboardPage = () => (
   <div className="container py-8">
@@ -81,7 +73,7 @@ export const router = createBrowserRouter([
         element: <LoginPage />,
       },
       {
-        path: 'register',
+        path: 'registro',
         element: <RegisterPage />,
       },
       {

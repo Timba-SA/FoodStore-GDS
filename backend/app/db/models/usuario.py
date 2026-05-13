@@ -54,8 +54,9 @@ class Usuario(BaseModel, table=True):
         sa_column=Column(String(100), nullable=False),
         description="User full name",
     )
-    apellido: str = Field(
-        sa_column=Column(String(100), nullable=False),
+    apellido: Optional[str] = Field(
+        default=None,
+        sa_column=Column(String(100), nullable=True),
         description="User last name",
     )
     hashed_password: str = Field(
@@ -152,7 +153,10 @@ class RefreshToken(BaseModel, table=True):
     # Relationships
     usuario: Usuario = Relationship(back_populates="refresh_tokens")
     # Self-referential relationship for replaced_by
-    replaced_by: Optional["RefreshToken"] = Relationship(back_populates="replaced_token")
+    replaced_by: Optional["RefreshToken"] = Relationship(
+        back_populates="replaced_token",
+        sa_relationship_kwargs={"remote_side": "RefreshToken.id"},
+    )
     replaced_token: list["RefreshToken"] = Relationship(back_populates="replaced_by")
 
     __table_args__ = (

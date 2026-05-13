@@ -256,21 +256,21 @@ class AuthService:
         self.session.add(new_user)
         await self.session.flush()
 
-        # Assign CUSTOMER role (create if not present)
+        # Assign CLIENT role (the domain role for registered customers per CHANGES.md)
         roles_result = await self.session.execute(
-            select(Rol).where(Rol.nombre == "customer")
+            select(Rol).where(Rol.nombre == "client")
         )
-        customer_role = roles_result.scalars().first()
-        if not customer_role:
-            customer_role = Rol(nombre="customer", descripcion="Regular customer")
-            self.session.add(customer_role)
+        client_role = roles_result.scalars().first()
+        if not client_role:
+            client_role = Rol(nombre="client", descripcion="Cliente registrado del e-commerce")
+            self.session.add(client_role)
             await self.session.flush()
 
-        self.session.add(UsuarioRol(usuario_id=new_user.id, rol_id=customer_role.id))
+        self.session.add(UsuarioRol(usuario_id=new_user.id, rol_id=client_role.id))
         await self.session.flush()
 
         access_token = self.create_access_token(
-            user_id=new_user.id, email=new_user.email, roles=["customer"]
+            user_id=new_user.id, email=new_user.email, roles=["client"]
         )
         raw_refresh, _ = await self._create_refresh_token_record(user_id=new_user.id)
 

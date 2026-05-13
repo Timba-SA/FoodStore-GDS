@@ -61,23 +61,23 @@ async def seed_database() -> None:
                 print("Database already seeded. Skipping...")
                 return
 
-            # 1. Seed Roles
+            # 1. Seed Roles (4 domain roles matching CHANGES.md spec)
             roles_data = [
                 {
                     "nombre": "admin",
-                    "descripcion": "Administrator with full access",
+                    "descripcion": "Administrador con acceso completo al sistema",
                 },
                 {
-                    "nombre": "customer",
-                    "descripcion": "Regular customer",
+                    "nombre": "stock",
+                    "descripcion": "Gestión de catálogo, productos e ingredientes",
                 },
                 {
-                    "nombre": "seller",
-                    "descripcion": "Seller/vendor",
+                    "nombre": "pedidos",
+                    "descripcion": "Gestión y seguimiento de pedidos",
                 },
                 {
-                    "nombre": "moderator",
-                    "descripcion": "Content moderator",
+                    "nombre": "client",
+                    "descripcion": "Cliente registrado del e-commerce",
                 },
             ]
 
@@ -173,7 +173,7 @@ async def seed_database() -> None:
             print(f"✓ Created {len(formas_pago)} payment methods")
 
             # 4. Seed Admin User
-            admin_email = "admin@foodstore.local"
+            admin_email = "admin@foodstore.com"
 
             # Check if admin already exists
             admin_result = await session.execute(
@@ -186,7 +186,7 @@ async def seed_database() -> None:
                     email=admin_email,
                     nombre="Admin",
                     apellido="FoodStore",
-                    hashed_password=get_password_hash("admin123"),
+                    hashed_password=get_password_hash("Admin1234!"),
                     numero_telefono="+541234567890",
                     activo=True,
                     verificado=True,

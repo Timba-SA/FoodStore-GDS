@@ -11,12 +11,12 @@ from app.db.base import BaseModel
 
 
 class RolEnum(str, Enum):
-    """User role enumeration."""
+    """User role enumeration (matches domain spec from CHANGES.md)."""
 
     ADMIN = "admin"
-    CUSTOMER = "customer"
-    SELLER = "seller"
-    MODERATOR = "moderator"
+    STOCK = "stock"
+    PEDIDOS = "pedidos"
+    CLIENT = "client"
 
 
 class Rol(BaseModel, table=True):

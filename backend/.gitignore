@@ -47,8 +47,8 @@ htmlcov/
 .dmypy.json
 dmypy.json
 
-# Alembic
-alembic/versions/
+# Alembic — NOTE: versions/ is intentionally tracked in git
+# alembic/versions/  ← DO NOT add this back; migrations must be committed
 
 # Logs
 *.log

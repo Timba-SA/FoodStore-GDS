@@ -31,7 +31,9 @@ router = APIRouter(prefix="/pedidos", tags=["pedidos"])
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
 def _is_admin(user) -> bool:
-    return hasattr(user, "rol") and user.rol and user.rol.nombre in ("ADMIN", "PEDIDOS")
+    """Check if user has admin or pedidos role (for order management access)."""
+    roles = getattr(user, "roles", [])
+    return any(r in ("admin", "pedidos") for r in roles)
 
 
 def _pedido_to_response(pedido, estado_nombre: str) -> PedidoResponse:

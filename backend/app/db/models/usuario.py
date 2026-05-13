@@ -4,8 +4,9 @@ from datetime import datetime
 from typing import Optional
 from enum import Enum
 
-from sqlmodel import Field, Relationship, Column, String, Integer, DateTime, Boolean
+from sqlmodel import Field, Relationship, Column, String
 from sqlalchemy import Index
+from sqlalchemy.orm import relationship
 
 from app.db.base import BaseModel
 
@@ -152,12 +153,28 @@ class RefreshToken(BaseModel, table=True):
 
     # Relationships
     usuario: Usuario = Relationship(back_populates="refresh_tokens")
-    # Self-referential relationship for replaced_by
+    # Self-referential: tracks which token replaced this one (token rotation audit).
+    # Uses raw sqlalchemy relationship because SQLModel's Relationship() does not
+    # support remote_side for self-referential associations.
     replaced_by: Optional["RefreshToken"] = Relationship(
-        back_populates="replaced_token",
-        sa_relationship_kwargs={"remote_side": "RefreshToken.id"},
+        sa_relationship=relationship(
+            "RefreshToken",
+            primaryjoin="RefreshToken.replaced_by_id == RefreshToken.id",
+            remote_side="RefreshToken.id",
+            foreign_keys="[RefreshToken.replaced_by_id]",
+            uselist=False,
+            overlaps="replaced_token",
+        )
     )
-    replaced_token: list["RefreshToken"] = Relationship(back_populates="replaced_by")
+    replaced_token: list["RefreshToken"] = Relationship(
+        sa_relationship=relationship(
+            "RefreshToken",
+            primaryjoin="RefreshToken.id == RefreshToken.replaced_by_id",
+            foreign_keys="[RefreshToken.replaced_by_id]",
+            uselist=True,
+            overlaps="replaced_by",
+        )
+    )
 
     __table_args__ = (
         Index("idx_refresh_tokens_usuario_id", "usuario_id"),

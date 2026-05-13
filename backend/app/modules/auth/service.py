@@ -102,7 +102,7 @@ class AuthService:
 
         raw_token = str(uuid.uuid4())
         token_hash = self._hash_token(raw_token)
-        expires_at = datetime.now() + timedelta(
+        expires_at = datetime.now(timezone.utc) + timedelta(
             days=self.settings.REFRESH_TOKEN_EXPIRE_DAYS
         )
 
@@ -212,6 +212,8 @@ class AuthService:
             raise ValueError("Invalid credentials")
         if user.deleted_at is not None:
             raise ValueError("Invalid credentials")
+        if not user.activo:
+            raise ValueError("Cuenta suspendida. Contactá con soporte.")
 
         roles = await self.get_user_roles(user.id)
         access_token = self.create_access_token(
@@ -247,7 +249,7 @@ class AuthService:
         new_user = Usuario(
             email=request.email,
             nombre=request.nombre,
-            apellido="",
+            apellido=None,  # RegisterRequest does not include apellido
             hashed_password=hashed_password,
             numero_telefono=request.numero_telefono,
             activo=True,

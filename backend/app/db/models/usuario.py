@@ -1,23 +1,38 @@
-"""User, Role, and Authentication models"""
+"""User, Role, and Authentication models."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from enum import Enum
 
-from sqlmodel import Field, Relationship, Column, String
-from sqlalchemy import Index
+from sqlmodel import Field, Relationship, Column, String, SQLModel
+from sqlalchemy import Index, ForeignKey
 from sqlalchemy.orm import relationship
 
 from app.db.base import BaseModel
 
 
+# ---------------------------------------------------------------------------
+# Enums
+# ---------------------------------------------------------------------------
+
+
 class RolEnum(str, Enum):
-    """User role enumeration (matches domain spec from CHANGES.md)."""
+    """Domain role names — used when creating roles programmatically.
+
+    These values match exactly what is stored in the `roles.nombre` column
+    and what the seed script inserts.  Use this enum instead of bare strings
+    to avoid typos across the codebase.
+    """
 
     ADMIN = "admin"
     STOCK = "stock"
     PEDIDOS = "pedidos"
     CLIENT = "client"
+
+
+# ---------------------------------------------------------------------------
+# Rol
+# ---------------------------------------------------------------------------
 
 
 class Rol(BaseModel, table=True):
@@ -26,19 +41,18 @@ class Rol(BaseModel, table=True):
     __tablename__ = "roles"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    nombre: str = Field(
-        sa_column=Column(String(50), unique=True, nullable=False),
-        description="Role name",
-    )
-    descripcion: Optional[str] = Field(
-        default=None,
-        description="Role description",
-    )
+    nombre: str = Field(sa_column=Column(String(50), unique=True, nullable=False))
+    descripcion: Optional[str] = Field(default=None)
 
     # Relationships
-    usuario_roles: list["UsuarioRol"] = Relationship(back_populates="rol")
+    usuario_roles: List["UsuarioRol"] = Relationship(back_populates="rol")
 
     __table_args__ = (Index("idx_roles_nombre", "nombre"),)
+
+
+# ---------------------------------------------------------------------------
+# Usuario
+# ---------------------------------------------------------------------------
 
 
 class Usuario(BaseModel, table=True):
@@ -47,41 +61,27 @@ class Usuario(BaseModel, table=True):
     __tablename__ = "usuarios"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    email: str = Field(
-        sa_column=Column(String(255), unique=True, nullable=False),
-        description="User email address",
-    )
-    nombre: str = Field(
-        sa_column=Column(String(100), nullable=False),
-        description="User full name",
-    )
+    email: str = Field(sa_column=Column(String(255), unique=True, nullable=False))
+    nombre: str = Field(sa_column=Column(String(100), nullable=False))
     apellido: Optional[str] = Field(
         default=None,
         sa_column=Column(String(100), nullable=True),
-        description="User last name",
     )
-    hashed_password: str = Field(
-        description="Hashed password",
-    )
+    hashed_password: str = Field()
     numero_telefono: Optional[str] = Field(
         default=None,
-        sa_column=Column(String(20)),
-        description="User phone number",
+        sa_column=Column(String(20), nullable=True),
     )
-    activo: bool = Field(
-        default=True,
-        description="Whether user account is active",
-    )
-    verificado: bool = Field(
-        default=False,
-        description="Whether user email is verified",
-    )
+    activo: bool = Field(default=True)
+    verificado: bool = Field(default=False)
 
     # Relationships
-    usuario_roles: list["UsuarioRol"] = Relationship(back_populates="usuario")
-    refresh_tokens: list["RefreshToken"] = Relationship(back_populates="usuario")
-    direcciones_entrega: list["DireccionEntrega"] = Relationship(back_populates="usuario")
-    pedidos: list["Pedido"] = Relationship(back_populates="usuario")
+    usuario_roles: List["UsuarioRol"] = Relationship(back_populates="usuario")
+    refresh_tokens: List["RefreshToken"] = Relationship(back_populates="usuario")
+    direcciones_entrega: List["DireccionEntrega"] = Relationship(
+        back_populates="usuario"
+    )
+    pedidos: List["Pedido"] = Relationship(back_populates="usuario")
 
     __table_args__ = (
         Index("idx_usuarios_email", "email"),
@@ -89,22 +89,19 @@ class Usuario(BaseModel, table=True):
     )
 
 
+# ---------------------------------------------------------------------------
+# UsuarioRol  (join table)
+# ---------------------------------------------------------------------------
+
+
 class UsuarioRol(BaseModel, table=True):
-    """User-Role association model."""
+    """User-Role many-to-many association."""
 
     __tablename__ = "usuario_roles"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    usuario_id: int = Field(
-        foreign_key="usuarios.id",
-        nullable=False,
-        description="Usuario ID",
-    )
-    rol_id: int = Field(
-        foreign_key="roles.id",
-        nullable=False,
-        description="Rol ID",
-    )
+    usuario_id: int = Field(foreign_key="usuarios.id", nullable=False)
+    rol_id: int = Field(foreign_key="roles.id", nullable=False)
 
     # Relationships
     usuario: Usuario = Relationship(back_populates="usuario_roles")
@@ -115,62 +112,60 @@ class UsuarioRol(BaseModel, table=True):
     )
 
 
+# ---------------------------------------------------------------------------
+# RefreshToken
+# ---------------------------------------------------------------------------
+
+
 class RefreshToken(BaseModel, table=True):
-    """Refresh token model for JWT authentication."""
+    """Refresh token model — supports rotation and replay detection."""
 
     __tablename__ = "refresh_tokens"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    usuario_id: int = Field(
-        foreign_key="usuarios.id",
-        nullable=False,
-        description="Usuario ID",
-    )
+    usuario_id: int = Field(foreign_key="usuarios.id", nullable=False)
     token_hash: str = Field(
-        sa_column=Column(String(500), unique=True, nullable=False),
-        description="Hashed refresh token (SHA-256)",
+        sa_column=Column(String(500), unique=True, nullable=False)
     )
-    expires_at: datetime = Field(
-        description="Token expiration timestamp",
-    )
-    revoked_at: Optional[datetime] = Field(
-        default=None,
-        description="Timestamp when token was revoked",
-    )
+    expires_at: datetime = Field()
+    revoked_at: Optional[datetime] = Field(default=None)
     replaced_by_id: Optional[int] = Field(
         default=None,
-        foreign_key="refresh_tokens.id",
-        description="ID of the token that replaced this one (on rotation)",
+        sa_column=Column(
+            "replaced_by_id",
+            # Cannot use Field(foreign_key=...) for self-referential +
+            # sa_column together; use raw Column with ForeignKey instead.
+            ForeignKey("refresh_tokens.id"),
+            nullable=True,
+        ),
     )
-    family_id: str = Field(
-        sa_column=Column(String(36), nullable=False),
-        description="UUID v4 grouping tokens of the same login session",
-    )
-    last_used_at: Optional[datetime] = Field(
-        default=None,
-        description="Timestamp when token was last used",
-    )
+    family_id: str = Field(sa_column=Column(String(36), nullable=False))
+    last_used_at: Optional[datetime] = Field(default=None)
 
-    # Relationships
+    # --------------------------------------------------------------------- #
+    # Relationships                                                           #
+    # --------------------------------------------------------------------- #
+
     usuario: Usuario = Relationship(back_populates="refresh_tokens")
-    # Self-referential: tracks which token replaced this one (token rotation audit).
-    # Uses raw sqlalchemy relationship because SQLModel's Relationship() does not
-    # support remote_side for self-referential associations.
+
+    # Self-referential: which token replaced this one (audit trail).
+    # SQLModel's Relationship() cannot handle remote_side on self-referential
+    # FKs — use raw SQLAlchemy relationship() with explicit column references.
     replaced_by: Optional["RefreshToken"] = Relationship(
         sa_relationship=relationship(
             "RefreshToken",
+            foreign_keys="[RefreshToken.replaced_by_id]",
             primaryjoin="RefreshToken.replaced_by_id == RefreshToken.id",
             remote_side="RefreshToken.id",
-            foreign_keys="[RefreshToken.replaced_by_id]",
             uselist=False,
             overlaps="replaced_token",
         )
     )
-    replaced_token: list["RefreshToken"] = Relationship(
+    replaced_token: List["RefreshToken"] = Relationship(
         sa_relationship=relationship(
             "RefreshToken",
-            primaryjoin="RefreshToken.id == RefreshToken.replaced_by_id",
             foreign_keys="[RefreshToken.replaced_by_id]",
+            primaryjoin="RefreshToken.id == RefreshToken.replaced_by_id",
             uselist=True,
             overlaps="replaced_by",
         )
@@ -183,51 +178,32 @@ class RefreshToken(BaseModel, table=True):
     )
 
 
+# ---------------------------------------------------------------------------
+# DireccionEntrega
+# ---------------------------------------------------------------------------
+
+
 class DireccionEntrega(BaseModel, table=True):
     """Delivery address model."""
 
     __tablename__ = "direcciones_entrega"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    usuario_id: int = Field(
-        foreign_key="usuarios.id",
-        nullable=False,
-        description="Usuario ID",
-    )
-    calle: str = Field(
-        sa_column=Column(String(255), nullable=False),
-        description="Street address",
-    )
-    numero: str = Field(
-        sa_column=Column(String(10), nullable=False),
-        description="Street number",
-    )
+    usuario_id: int = Field(foreign_key="usuarios.id", nullable=False)
+    calle: str = Field(sa_column=Column(String(255), nullable=False))
+    numero: str = Field(sa_column=Column(String(10), nullable=False))
     departamento: Optional[str] = Field(
         default=None,
-        sa_column=Column(String(20)),
-        description="Apartment/unit number",
+        sa_column=Column(String(20), nullable=True),
     )
-    ciudad: str = Field(
-        sa_column=Column(String(100), nullable=False),
-        description="City",
-    )
-    provincia: str = Field(
-        sa_column=Column(String(100), nullable=False),
-        description="State/Province",
-    )
-    codigo_postal: str = Field(
-        sa_column=Column(String(20), nullable=False),
-        description="Postal code",
-    )
+    ciudad: str = Field(sa_column=Column(String(100), nullable=False))
+    provincia: str = Field(sa_column=Column(String(100), nullable=False))
+    codigo_postal: str = Field(sa_column=Column(String(20), nullable=False))
     pais: str = Field(
         default="Argentina",
-        sa_column=Column(String(100), nullable=False),
-        description="Country",
+        sa_column=Column(String(100), nullable=False, server_default="Argentina"),
     )
-    es_predeterminada: bool = Field(
-        default=False,
-        description="Whether this is the default address",
-    )
+    es_predeterminada: bool = Field(default=False)
 
     # Relationships
     usuario: Usuario = Relationship(back_populates="direcciones_entrega")

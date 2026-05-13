@@ -139,7 +139,9 @@ class AuthService:
     async def get_user_roles(self, user_id: int) -> list[str]:
         """Return role name strings for a given user ID."""
         roles_result = await self.session.execute(
-            select(Rol).join(UsuarioRol).where(UsuarioRol.usuario_id == user_id)
+            select(Rol)
+            .join(UsuarioRol, UsuarioRol.rol_id == Rol.id)
+            .where(UsuarioRol.usuario_id == user_id)
         )
         return [role.nombre for role in roles_result.scalars().all()]
 
@@ -271,10 +273,16 @@ class AuthService:
         self.session.add(UsuarioRol(usuario_id=new_user.id, rol_id=client_role.id))
         await self.session.flush()
 
+        # Fetch roles from DB (source of truth) instead of hardcoding ["client"]
+        roles = await self.get_user_roles(new_user.id)
+
         access_token = self.create_access_token(
-            user_id=new_user.id, email=new_user.email, roles=["client"]
+            user_id=new_user.id, email=new_user.email, roles=roles
         )
         raw_refresh, _ = await self._create_refresh_token_record(user_id=new_user.id)
+
+        # Refresh the user object so created_at / updated_at are populated
+        await self.session.refresh(new_user)
 
         user_response = await self._build_user_response(new_user)
         return TokenResponse(
@@ -309,11 +317,8 @@ class AuthService:
 
         now = datetime.now(timezone.utc)
 
-        # Expired?
-        expires_at = record.expires_at
-        if expires_at.tzinfo is None:
-            expires_at = expires_at.replace(tzinfo=timezone.utc)
-        if now > expires_at:
+        # Expired? (both datetimes are now timezone-aware via base._utcnow)
+        if datetime.now(timezone.utc) > record.expires_at:
             raise ValueError("Refresh token expired")
 
         # Replay detected: token already revoked

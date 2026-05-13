@@ -119,7 +119,7 @@ async def register(
 ) -> TokenResponse:
     """Register a new user.
 
-    Creates a new user account with the CUSTOMER role and returns JWT tokens.
+    Creates a new user account with the CLIENT role and returns JWT tokens.
 
     Raises:
         HTTPException 409: Email already registered

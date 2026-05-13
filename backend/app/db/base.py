@@ -1,32 +1,39 @@
-"""SQLModel base and common utilities"""
+"""SQLModel base and common utilities."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlmodel import SQLModel, Field
 
 
+def _utcnow() -> datetime:
+    """Return current UTC time as timezone-aware datetime.
+
+    Using datetime.now(timezone.utc) instead of the deprecated datetime.utcnow()
+    (deprecated in Python 3.12).  This ensures all timestamps stored in the DB
+    are comparable without .replace(tzinfo=...) patches elsewhere.
+    """
+    return datetime.now(timezone.utc)
+
+
 class TimestampMixin:
-    """Mixin for timestamp fields (created_at, updated_at, deleted_at)."""
+    """Mixin that adds created_at / updated_at / deleted_at to any model."""
 
     created_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=_utcnow,
         nullable=False,
-        description="Record creation timestamp",
     )
     updated_at: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=_utcnow,
         nullable=False,
-        description="Record last update timestamp",
     )
     deleted_at: Optional[datetime] = Field(
         default=None,
         nullable=True,
-        description="Record soft delete timestamp",
     )
 
 
 class BaseModel(SQLModel, TimestampMixin):
-    """Base model with common fields and timestamp tracking."""
+    """Base model with timestamps for all domain tables."""
 
     pass

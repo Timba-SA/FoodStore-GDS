@@ -102,7 +102,7 @@ class AuthService:
 
         raw_token = str(uuid.uuid4())
         token_hash = self._hash_token(raw_token)
-        expires_at = datetime.now(timezone.utc) + timedelta(
+        expires_at = datetime.utcnow() + timedelta(
             days=self.settings.REFRESH_TOKEN_EXPIRE_DAYS
         )
 
@@ -317,8 +317,13 @@ class AuthService:
 
         now = datetime.now(timezone.utc)
 
-        # Expired? (both datetimes are now timezone-aware via base._utcnow)
-        if datetime.now(timezone.utc) > record.expires_at:
+        # Expired? DB stores naive UTC; compare against naive UTC now
+        expires_at = record.expires_at
+        now_naive = datetime.utcnow()
+        if expires_at.tzinfo is not None:
+            # Defensive: strip tzinfo if somehow stored as aware
+            expires_at = expires_at.replace(tzinfo=None)
+        if now_naive > expires_at:
             raise ValueError("Refresh token expired")
 
         # Replay detected: token already revoked

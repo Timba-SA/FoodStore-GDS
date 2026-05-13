@@ -25,10 +25,25 @@ from app.modules.perfil.router import router as perfil_router
 async def lifespan(app: FastAPI):
     """Application lifespan context manager.
 
-    Startup: Initialize resources
-    Shutdown: Cleanup resources
+    Startup: Run Alembic migrations then initialize resources.
+    Shutdown: Cleanup resources.
     """
-    # Startup
+    import subprocess  # noqa: PLC0415
+
+    # Run migrations synchronously at startup so the DB is always up-to-date
+    # before the first request is handled. This is idempotent — if already at
+    # head, Alembic does nothing.
+    print("Running Alembic migrations...")
+    result = subprocess.run(
+        ["alembic", "upgrade", "head"],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        print(f"[ERROR] Alembic migration failed:\n{result.stderr}")
+        raise RuntimeError("Database migration failed — aborting startup")
+    print(result.stdout or "Migrations up to date.")
+
     app.state.settings = get_settings()
     print("Application startup complete")
 

@@ -132,7 +132,7 @@ class CategoriaService:
         if data.parent_id is not None:
             categoria.parent_id = data.parent_id
 
-        categoria.updated_at = datetime.now(timezone.utc)
+        categoria.updated_at = datetime.utcnow()
         await self.session.flush()
         await self.session.refresh(categoria)
         return categoria
@@ -169,7 +169,7 @@ class CategoriaService:
                 f"Cannot delete category '{categoria.nombre}': it has {products_count} active product(s)"
             )
 
-        categoria.deleted_at = datetime.now(timezone.utc)
+        categoria.deleted_at = datetime.utcnow()
         await self.session.flush()
 
     async def _check_cycle(self, current_id: int, proposed_parent_id: int) -> None:

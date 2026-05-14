@@ -95,7 +95,7 @@ class IngredienteService:
         if payload.es_alergeno is not None:
             ingrediente.es_alergeno = payload.es_alergeno
 
-        ingrediente.updated_at = datetime.now(timezone.utc)
+        ingrediente.updated_at = datetime.utcnow()
         self.session.add(ingrediente)
         await self.session.flush()
         await self.session.refresh(ingrediente)
@@ -120,6 +120,6 @@ class IngredienteService:
                 f"{assoc_count} producto(s) activo(s)"
             )
 
-        ingrediente.deleted_at = datetime.now(timezone.utc)
+        ingrediente.deleted_at = datetime.utcnow()
         self.session.add(ingrediente)
         await self.session.flush()

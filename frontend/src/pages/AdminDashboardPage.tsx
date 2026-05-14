@@ -1,5 +1,5 @@
 /**
- * AdminDashboardPage — Business metrics with recharts.
+ * AdminDashboardPage — Business metrics with recharts. Premium redesign.
  * Route: /admin/dashboard
  */
 
@@ -25,27 +25,37 @@ const ESTADO_COLORS: Record<string, string> = {
   cancelado: '#ef4444',
 }
 
-function KPICard({
-  label,
-  value,
-  sub,
-  icon,
-}: {
-  label: string
-  value: string
-  sub?: string
-  icon: string
+function KPICard({ label, value, sub, icon }: {
+  label: string; value: string; sub?: string; icon: string
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-6 py-5 flex items-start gap-4">
-      <span className="text-3xl">{icon}</span>
-      <div>
-        <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">{label}</p>
-        <p className="text-2xl font-extrabold text-gray-900 mt-0.5">{value}</p>
-        {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+    <div className="card group hover:shadow-lg hover:shadow-slate-200/60 hover:-translate-y-0.5 transition-all duration-300 px-6 py-5">
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 flex items-center justify-center flex-shrink-0 text-2xl group-hover:scale-110 transition-transform duration-300">
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+          <p className="text-2xl font-extrabold text-slate-900 mt-1 tracking-tight">{value}</p>
+          {sub && <p className="text-xs text-slate-400 mt-1 truncate">{sub}</p>}
+        </div>
       </div>
     </div>
   )
+}
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white rounded-xl shadow-xl shadow-slate-200/50 border border-slate-100 px-4 py-3">
+        <p className="text-xs font-bold text-slate-500 mb-1">{label}</p>
+        <p className="text-base font-extrabold text-orange-600">
+          ${Number(payload[0]?.value).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+        </p>
+      </div>
+    )
+  }
+  return null
 }
 
 export default function AdminDashboardPage() {
@@ -55,20 +65,26 @@ export default function AdminDashboardPage() {
   const { data: estados = [] } = useEstadosPedidos()
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-gradient-to-r from-orange-600 to-amber-500 text-white px-8 py-10">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-extrabold">Panel de Administración</h1>
-          <p className="text-orange-100 mt-1">Métricas del negocio en tiempo real</p>
+    <div className="min-h-screen bg-slate-50">
+      {/* Hero header */}
+      <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white px-8 py-10 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-20 -right-20 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-1/3 w-80 h-40 bg-amber-500/5 rounded-full blur-2xl" />
         </div>
-      </header>
+        <div className="max-w-6xl mx-auto relative">
+          <p className="text-xs font-bold text-orange-400 uppercase tracking-widest mb-2">Panel de Control</p>
+          <h1 className="text-3xl font-extrabold tracking-tight">Administración</h1>
+          <p className="text-slate-400 mt-1 text-sm">Métricas del negocio en tiempo real</p>
+        </div>
+      </div>
 
-      <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+      <main className="max-w-6xl mx-auto px-4 py-8 space-y-8 -mt-4">
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {kpiLoading ? (
             [...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl h-24 animate-pulse border border-gray-100" />
+              <div key={i} className="card h-24 animate-pulse bg-slate-100" />
             ))
           ) : kpi ? (
             <>
@@ -91,40 +107,49 @@ export default function AdminDashboardPage() {
 
         {/* Charts row */}
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Ventas line chart */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4">
-              Ingresos últimos 7 días
+          {/* Line chart */}
+          <div className="lg:col-span-2 card p-6">
+            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">
+              Ingresos — Últimos 7 días
             </h2>
             <ResponsiveContainer width="100%" height={240}>
-              <LineChart data={ventas}>
+              <LineChart data={ventas} margin={{ top: 5, right: 5, bottom: 5, left: 5 }}>
                 <XAxis
                   dataKey="fecha"
                   tickFormatter={(v: string) => v.slice(5)}
-                  tick={{ fontSize: 11 }}
+                  tick={{ fontSize: 11, fill: '#94a3b8', fontFamily: 'Outfit' }}
+                  axisLine={false}
+                  tickLine={false}
                 />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip
-                  formatter={(v: any) =>
-                    `$${Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
-                  }
+                <YAxis
+                  tick={{ fontSize: 11, fill: '#94a3b8', fontFamily: 'Outfit' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={60}
                 />
+                <Tooltip content={<CustomTooltip />} />
                 <Line
                   type="monotone"
                   dataKey="ingresos"
-                  stroke="#ea580c"
-                  strokeWidth={2.5}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
+                  stroke="url(#orangeGradient)"
+                  strokeWidth={3}
+                  dot={{ r: 5, fill: '#ea580c', strokeWidth: 2, stroke: '#fff' }}
+                  activeDot={{ r: 7, fill: '#ea580c', stroke: '#fff', strokeWidth: 2 }}
                 />
+                <defs>
+                  <linearGradient id="orangeGradient" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#f97316" />
+                    <stop offset="100%" stopColor="#ea580c" />
+                  </linearGradient>
+                </defs>
               </LineChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Status pie chart */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-            <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4">
-              Estado de pedidos
+          {/* Pie chart */}
+          <div className="card p-6">
+            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">
+              Estado de Pedidos
             </h2>
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
@@ -134,11 +159,10 @@ export default function AdminDashboardPage() {
                   nameKey="estado"
                   cx="50%"
                   cy="50%"
-                  outerRadius={80}
-                  label={({ name, percent }: any) =>
-                    `${name} ${(percent * 100).toFixed(0)}%`
-                  }
-                  labelLine={false}
+                  innerRadius={55}
+                  outerRadius={85}
+                  paddingAngle={3}
+                  label={false}
                 >
                   {estados.map((entry, index) => (
                     <Cell
@@ -147,23 +171,44 @@ export default function AdminDashboardPage() {
                     />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{ borderRadius: '12px', border: '1px solid #f1f5f9', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)' }}
+                  itemStyle={{ fontWeight: 600, fontFamily: 'Outfit' }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Top products bar chart */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4">
+        {/* Bar chart */}
+        <div className="card p-6">
+          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">
             Productos más vendidos (unidades)
           </h2>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={topProductos} layout="vertical">
-              <XAxis type="number" tick={{ fontSize: 11 }} />
-              <YAxis type="category" dataKey="nombre" width={160} tick={{ fontSize: 12 }} />
-              <Tooltip />
-              <Bar dataKey="cantidad" fill="#ea580c" radius={[0, 6, 6, 0]} />
+            <BarChart data={topProductos} layout="vertical" margin={{ left: 10, right: 30 }}>
+              <XAxis
+                type="number"
+                tick={{ fontSize: 11, fill: '#94a3b8', fontFamily: 'Outfit' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                type="category"
+                dataKey="nombre"
+                width={160}
+                tick={{ fontSize: 12, fill: '#475569', fontFamily: 'Outfit' }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                contentStyle={{ borderRadius: '12px', border: '1px solid #f1f5f9', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', fontFamily: 'Outfit' }}
+              />
+              <Bar dataKey="cantidad" radius={[0, 8, 8, 0]}>
+                {topProductos.map((_, i) => (
+                  <Cell key={i} fill={i === 0 ? '#ea580c' : i === 1 ? '#f97316' : '#fb923c'} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>

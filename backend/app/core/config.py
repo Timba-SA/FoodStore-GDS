@@ -3,7 +3,7 @@
 from functools import lru_cache
 from typing import List
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -46,11 +46,13 @@ class Settings(BaseSettings):
     RATE_LIMIT_REGISTER: str = "3/minute"
     RATE_LIMIT_REFRESH: str = "10/minute"
 
-    class Config:
-        """Pydantic config."""
+    # SMTP (for recovery emails)
+    SMTP_HOST: str = ""
+    SMTP_PORT: str = ""
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
 
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
 
 @lru_cache()

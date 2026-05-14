@@ -35,6 +35,7 @@ export default function ProductoFormModal({ producto, onSubmit, onCancel, isLoad
   const [sku, setSku] = useState(producto?.sku ?? '')
   const [imagenUrl, setImagenUrl] = useState(producto?.imagen_url ?? '')
   const [activo, setActivo] = useState(producto?.activo ?? true)
+  const [esAlergeno, setEsAlergeno] = useState(producto?.es_alergeno ?? false)
   const [categoriaIds, setCategoriaIds] = useState<number[]>(
     producto?.categorias.map((c) => c.id) ?? []
   )
@@ -70,15 +71,16 @@ export default function ProductoFormModal({ producto, onSubmit, onCancel, isLoad
       sku: sku.trim().toUpperCase(),
       imagen_url: imagenUrl.trim() || undefined,
       activo,
+      es_alergeno: esAlergeno,
       categoria_ids: categoriaIds,
       ingrediente_ids: ingredienteIds,
     })
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-auto p-8">
-        <h2 className="text-2xl font-bold mb-6 text-gray-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 overflow-y-auto">
+      <div className="bg-white rounded-[2rem] shadow-2xl shadow-orange-900/5 w-full max-w-2xl my-auto p-8 border border-white/20">
+        <h2 className="text-2xl font-bold mb-6 text-slate-800 tracking-tight">
           {producto ? 'Editar producto' : 'Nuevo producto'}
         </h2>
 
@@ -94,7 +96,7 @@ export default function ProductoFormModal({ producto, onSubmit, onCancel, isLoad
                 type="text"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all bg-slate-50/50 hover:bg-white"
               />
             </div>
 
@@ -109,7 +111,7 @@ export default function ProductoFormModal({ producto, onSubmit, onCancel, isLoad
                 value={sku}
                 onChange={(e) => setSku(e.target.value)}
                 placeholder="PROD-001"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 font-mono"
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-mono tracking-wider bg-slate-50/50 hover:bg-white"
               />
             </div>
 
@@ -125,7 +127,7 @@ export default function ProductoFormModal({ producto, onSubmit, onCancel, isLoad
                 step="0.01"
                 value={precio}
                 onChange={(e) => setPrecio(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all bg-slate-50/50 hover:bg-white"
               />
             </div>
 
@@ -138,7 +140,7 @@ export default function ProductoFormModal({ producto, onSubmit, onCancel, isLoad
                 min="0"
                 value={stock}
                 onChange={(e) => setStock(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all bg-slate-50/50 hover:bg-white"
               />
             </div>
 
@@ -151,7 +153,7 @@ export default function ProductoFormModal({ producto, onSubmit, onCancel, isLoad
                 value={imagenUrl}
                 onChange={(e) => setImagenUrl(e.target.value)}
                 placeholder="https://..."
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all bg-slate-50/50 hover:bg-white"
               />
             </div>
           </div>
@@ -163,8 +165,8 @@ export default function ProductoFormModal({ producto, onSubmit, onCancel, isLoad
               id="producto-descripcion"
               value={descripcion}
               onChange={(e) => setDescripcion(e.target.value)}
-              rows={2}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+              rows={3}
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all resize-none bg-slate-50/50 hover:bg-white"
             />
           </div>
 
@@ -179,6 +181,25 @@ export default function ProductoFormModal({ producto, onSubmit, onCancel, isLoad
             />
             Disponible para la venta
           </label>
+
+          {/* Es Alérgeno */}
+          <div className="flex items-start gap-3 p-4 bg-orange-50 border border-orange-200 rounded-xl">
+            <input
+              id="producto-es-alergeno"
+              type="checkbox"
+              checked={esAlergeno}
+              onChange={(e) => setEsAlergeno(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-orange-300 text-orange-600 focus:ring-orange-500"
+            />
+            <div className="text-sm">
+              <label htmlFor="producto-es-alergeno" className="font-medium text-orange-900 cursor-pointer block">
+                ⚠️ Marcar manualmente como alérgeno
+              </label>
+              <p className="text-orange-700 mt-1">
+                Si un ingrediente es alérgeno, el producto completo ya se considera alérgeno de forma automática.
+              </p>
+            </div>
+          </div>
 
           {/* Categorías */}
           <div>
@@ -230,14 +251,14 @@ export default function ProductoFormModal({ producto, onSubmit, onCancel, isLoad
           )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={onCancel}
-              className="px-5 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
+              className="px-6 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">
               Cancelar
             </button>
             <button type="submit" id="producto-submit" disabled={isLoading}
-              className="px-5 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 disabled:opacity-50 transition">
-              {isLoading ? 'Guardando…' : producto ? 'Guardar cambios' : 'Crear'}
+              className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl shadow-md hover:shadow-lg hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed transition-all duration-300 transform active:scale-95">
+              {isLoading ? 'Guardando…' : producto ? 'Guardar cambios' : 'Crear producto'}
             </button>
           </div>
         </form>

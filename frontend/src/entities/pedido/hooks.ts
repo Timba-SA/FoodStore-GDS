@@ -45,6 +45,7 @@ export function useAvanzarEstado() {
       pedidoApi.avanzarEstado(id, nuevo_estado, nota),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [PEDIDOS_KEY] })
+      queryClient.invalidateQueries({ queryKey: ['admin-pedidos'] })
     },
   })
 }

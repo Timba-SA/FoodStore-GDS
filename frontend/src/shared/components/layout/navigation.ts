@@ -12,12 +12,13 @@ export interface NavLink {
   icon: string // lucide-react icon name
   roles: string[] | null
   dividerBefore?: boolean
+  hideWhenAuth?: boolean
 }
 
 export const NAVIGATION_LINKS: NavLink[] = [
   // ── Public ────────────────────────────────────────────────
   { label: 'Catálogo', path: '/catalogo', icon: 'Store', roles: null },
-  { label: 'Iniciar Sesión', path: '/login', icon: 'LogIn', roles: null },
+  { label: 'Iniciar Sesión', path: '/login', icon: 'LogIn', roles: null, hideWhenAuth: true },
 
   // ── Any authenticated user ─────────────────────────────────
   { label: 'Mi Perfil', path: '/perfil', icon: 'UserCircle', roles: [], dividerBefore: true },

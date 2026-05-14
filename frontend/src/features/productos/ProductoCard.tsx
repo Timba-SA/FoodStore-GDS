@@ -2,38 +2,45 @@
  * ProductoCard — Card component for the public catalog grid.
  */
 
+import { useState } from 'react'
 import type { Producto } from '@/entities/producto/types'
 
 interface Props {
   producto: Producto
   onAddToCart?: (producto: Producto) => void
+  style?: React.CSSProperties
 }
 
-export default function ProductoCard({ producto, onAddToCart }: Props) {
-  const hasAlergenos = producto.ingredientes.some((i) => i.es_alergeno)
+export default function ProductoCard({ producto, onAddToCart, style }: Props) {
+  const [imgError, setImgError] = useState(false)
+  const hasAlergenos = producto.es_alergeno || producto.ingredientes.some((i) => i.es_alergeno)
   const enStock = producto.stock > 0
 
   return (
-    <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
+    <div 
+      className="group bg-white rounded-[1.5rem] shadow-sm border border-slate-100 overflow-hidden hover:shadow-2xl hover:shadow-orange-500/10 hover:-translate-y-1.5 transition-all duration-500 animate-fade-in-up opacity-0"
+      style={style}
+    >
       {/* Image */}
-      <div className="relative h-44 bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center overflow-hidden">
-        {producto.imagen_url ? (
+      <div className="relative h-48 bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center overflow-hidden">
+        {producto.imagen_url && !imgError ? (
           <img
             src={producto.imagen_url}
             alt={producto.nombre}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={() => setImgError(true)}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <span className="text-5xl select-none">🍽️</span>
+          <span className="text-5xl select-none group-hover:scale-110 transition-transform duration-500">🍽️</span>
         )}
         {hasAlergenos && (
-          <span className="absolute top-2 right-2 bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-orange-200">
+          <span className="absolute top-3 right-3 bg-orange-100/90 backdrop-blur-sm text-orange-700 text-[10px] font-bold px-2.5 py-1 rounded-full border border-orange-200/50 shadow-sm">
             ⚠️ Alérgenos
           </span>
         )}
         {!enStock && (
-          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-            <span className="bg-white text-gray-700 text-xs font-semibold px-3 py-1 rounded-full">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center">
+            <span className="bg-white/90 text-gray-800 text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
               Sin stock
             </span>
           </div>
@@ -41,40 +48,40 @@ export default function ProductoCard({ producto, onAddToCart }: Props) {
       </div>
 
       {/* Body */}
-      <div className="p-4">
-        <p className="text-xs text-gray-400 font-mono mb-1">{producto.sku}</p>
-        <h3 className="font-semibold text-gray-900 text-sm leading-snug mb-1 line-clamp-2">
+      <div className="p-5">
+        <p className="text-xs text-gray-400 font-mono mb-1.5 tracking-wide">{producto.sku}</p>
+        <h3 className="font-semibold text-gray-900 text-base leading-snug mb-1.5 line-clamp-2">
           {producto.nombre}
         </h3>
         {producto.descripcion && (
-          <p className="text-xs text-gray-500 line-clamp-2 mb-3">{producto.descripcion}</p>
+          <p className="text-sm text-gray-500 line-clamp-2 mb-4 leading-relaxed">{producto.descripcion}</p>
         )}
 
         {/* Categories */}
         {producto.categorias.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-3">
+          <div className="flex flex-wrap gap-1.5 mb-4">
             {producto.categorias.slice(0, 2).map((c) => (
-              <span key={c.id} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+               <span key={c.id} className="text-[11px] font-medium bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">
                 {c.nombre}
               </span>
             ))}
             {producto.categorias.length > 2 && (
-              <span className="text-[10px] bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">
+              <span className="text-[11px] font-medium bg-slate-100 text-slate-400 px-2.5 py-1 rounded-full">
                 +{producto.categorias.length - 2}
               </span>
             )}
           </div>
         )}
 
-        <div className="flex items-center justify-between">
-          <span className="text-lg font-bold text-orange-600">
+        <div className="flex items-center justify-between mt-auto pt-2">
+          <span className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-amber-600">
             ${parseFloat(producto.precio).toFixed(2)}
           </span>
           <button
             id={`btn-add-cart-${producto.id}`}
             onClick={() => onAddToCart?.(producto)}
             disabled={!enStock}
-            className="text-xs font-semibold bg-orange-600 text-white px-3 py-1.5 rounded-lg hover:bg-orange-700 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="text-xs font-bold bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2 rounded-xl shadow-md hover:shadow-lg hover:from-orange-600 hover:to-orange-700 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed transition-all duration-300 transform active:scale-95"
           >
             Agregar
           </button>

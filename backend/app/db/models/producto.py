@@ -45,6 +45,10 @@ class Producto(BaseModel, table=True):
         default=True,
         description="Whether product is available for sale",
     )
+    es_alergeno: bool = Field(
+        default=False,
+        description="Whether product is manually marked as allergen",
+    )
 
     # Relationships
     productos_categorias: list["ProductoCategoria"] = Relationship(
@@ -59,6 +63,7 @@ class Producto(BaseModel, table=True):
         Index("idx_productos_sku", "sku"),
         Index("idx_productos_nombre", "nombre"),
         Index("idx_productos_activo", "activo"),
+        Index("idx_productos_es_alergeno", "es_alergeno"),
     )
 
 

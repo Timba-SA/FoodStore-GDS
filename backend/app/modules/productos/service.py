@@ -146,7 +146,10 @@ class ProductoService:
                 )
                 .scalar_subquery()
             )
-            stmt = stmt.where(Producto.id.not_in(alergeno_subq))
+            stmt = stmt.where(
+                Producto.id.not_in(alergeno_subq),
+                Producto.es_alergeno.is_(False),
+            )
 
         stmt = stmt.order_by(Producto.nombre).offset(skip).limit(limit)
         result = await self.session.execute(stmt)
@@ -162,6 +165,7 @@ class ProductoService:
             sku=payload.sku,
             imagen_url=payload.imagen_url,
             activo=payload.activo,
+            es_alergeno=payload.es_alergeno,
         )
         self.session.add(producto)
         await self.session.flush()  # get producto.id
@@ -196,8 +200,10 @@ class ProductoService:
             producto.imagen_url = payload.imagen_url
         if payload.activo is not None:
             producto.activo = payload.activo
+        if payload.es_alergeno is not None:
+            producto.es_alergeno = payload.es_alergeno
 
-        producto.updated_at = datetime.now(timezone.utc)
+        producto.updated_at = datetime.utcnow()
         self.session.add(producto)
         await self.session.flush()
 
@@ -233,7 +239,7 @@ class ProductoService:
             )
 
         producto.stock = new_stock
-        producto.updated_at = datetime.now(timezone.utc)
+        producto.updated_at = datetime.utcnow()
         self.session.add(producto)
         await self.session.flush()
 
@@ -248,7 +254,7 @@ class ProductoService:
         if producto is None:
             raise ValueError(f"Producto {producto_id} not found")
 
-        producto.deleted_at = datetime.now(timezone.utc)
+        producto.deleted_at = datetime.utcnow()
         producto.activo = False
         self.session.add(producto)
         await self.session.flush()

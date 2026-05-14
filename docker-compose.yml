@@ -10,6 +10,8 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://foodstore:foodstore@db:5432/foodstore_db
       - SECRET_KEY=supersecretkey # En prod esto viene de secretos
+    volumes:
+      - ./backend:/app
     depends_on:
       - db
     networks:
@@ -23,6 +25,9 @@ services:
     container_name: foodstore-frontend
     ports:
       - "5173:80"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
     networks:

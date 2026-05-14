@@ -41,6 +41,7 @@ def _to_response(producto) -> ProductoResponse:
         sku=producto.sku,
         imagen_url=producto.imagen_url,
         activo=producto.activo,
+        es_alergeno=producto.es_alergeno,
         deleted_at=producto.deleted_at,
         created_at=producto.created_at,
         updated_at=producto.updated_at,
@@ -165,11 +166,13 @@ async def update_producto(
             status_code=http_status,
             detail={"error": "validation_error", "message": err},
         )
-    except Exception:
+    except Exception as e:
+        import traceback
+        err_msg = traceback.format_exc()
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"error": "server_error", "message": "Failed to update product"},
+            detail={"error": "server_error", "message": f"Traceback: {err_msg}"},
         )
 
 

@@ -24,6 +24,7 @@ export interface Producto {
   sku: string
   imagen_url: string | null
   activo: boolean
+  es_alergeno: boolean
   deleted_at: string | null
   created_at: string
   updated_at: string
@@ -39,6 +40,7 @@ export interface ProductoCreatePayload {
   sku: string
   imagen_url?: string
   activo?: boolean
+  es_alergeno?: boolean
   categoria_ids?: number[]
   ingrediente_ids?: number[]
 }
@@ -51,6 +53,7 @@ export interface ProductoUpdatePayload {
   sku?: string
   imagen_url?: string
   activo?: boolean
+  es_alergeno?: boolean
   categoria_ids?: number[]
   ingrediente_ids?: number[]
 }

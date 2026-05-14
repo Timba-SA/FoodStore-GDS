@@ -40,6 +40,7 @@ class ProductoCreate(BaseModel):
     sku: str
     imagen_url: Optional[str] = None
     activo: bool = True
+    es_alergeno: bool = False
     categoria_ids: list[int] = []
     ingrediente_ids: list[int] = []
 
@@ -80,6 +81,7 @@ class ProductoUpdate(BaseModel):
     sku: Optional[str] = None
     imagen_url: Optional[str] = None
     activo: Optional[bool] = None
+    es_alergeno: Optional[bool] = None
     categoria_ids: Optional[list[int]] = None
     ingrediente_ids: Optional[list[int]] = None
 
@@ -124,6 +126,7 @@ class ProductoResponse(BaseModel):
     sku: str
     imagen_url: Optional[str]
     activo: bool
+    es_alergeno: bool
     deleted_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime

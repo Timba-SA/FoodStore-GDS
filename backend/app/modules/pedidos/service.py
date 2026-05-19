@@ -333,6 +333,10 @@ class PedidoService:
         )
         if not is_admin:
             query = query.where(Pedido.usuario_id == usuario_id)
+        
+        # Don't show soft-deleted orders
+        query = query.where(Pedido.deleted_at.is_(None))
+        
         if estado:
             result_e = await self.session.execute(
                 select(EstadoPedido).where(EstadoPedido.nombre == estado)
@@ -360,3 +364,21 @@ class PedidoService:
         if not is_admin and pedido.usuario_id != usuario_id:
             raise PermissionError("No tenés permiso para ver este pedido.")
         return pedido
+
+    async def ocultar(self, pedido_id: int, usuario_id: int) -> None:
+        """Soft-deletes an order so it doesn't show in the user's view. Only for CANCELADO."""
+        pedido = await self._get_pedido(pedido_id)
+        
+        if pedido.usuario_id != usuario_id:
+            raise PermissionError("No tenés permiso para eliminar este pedido.")
+            
+        result = await self.session.execute(
+            select(EstadoPedido).where(EstadoPedido.id == pedido.estado_id)
+        )
+        estado_actual = result.scalars().first()
+        
+        if not estado_actual or estado_actual.nombre != "cancelado":
+            raise ValueError("Solo se pueden eliminar pedidos que estén cancelados.")
+            
+        pedido.deleted_at = datetime.utcnow()
+        pedido.updated_at = datetime.utcnow()

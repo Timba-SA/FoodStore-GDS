@@ -3,6 +3,7 @@
  */
 
 import { usePedido, useCancelarPedido } from '@/entities/pedido/hooks'
+import { useIngredientes } from '@/entities/ingrediente/hooks'
 import type { HistorialEstadoResponse } from '@/entities/pedido/types'
 
 interface Props {
@@ -72,6 +73,7 @@ function Timeline({ historial }: { historial: HistorialEstadoResponse[] }) {
 
 export default function PedidoDetailModal({ pedidoId, onClose }: Props) {
   const { data: pedido, isLoading } = usePedido(pedidoId)
+  const { data: ingredientes = [] } = useIngredientes()
   const cancelar = useCancelarPedido()
 
   const canCancel = pedido && ['pendiente', 'confirmado'].includes(pedido.estado_nombre)
@@ -120,7 +122,9 @@ export default function PedidoDetailModal({ pedidoId, onClose }: Props) {
                         </p>
                         {d.personalizacion && d.personalizacion.length > 0 && (
                           <p className="text-xs text-gray-400">
-                            Sin ingredientes ID: {d.personalizacion.join(', ')}
+                            Sin ingredientes: {d.personalizacion
+                              .map(id => ingredientes.find(i => i.id === id)?.nombre || `ID ${id}`)
+                              .join(', ')}
                           </p>
                         )}
                       </div>

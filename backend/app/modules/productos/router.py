@@ -16,7 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_db
-from app.modules.auth.router import require_role
+from app.modules.auth.router import require_role, get_optional_current_user
 from app.modules.productos.schemas import (
     ProductoCreate,
     ProductoResponse,
@@ -74,10 +74,16 @@ async def list_productos(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
     session: AsyncSession = Depends(get_db),
+    current_user = Depends(get_optional_current_user),
 ) -> list[ProductoResponse]:
+    # Only admins or stock can see inactive products
+    can_see_inactive = False
+    if current_user and any(r in _WRITE_ROLES for r in getattr(current_user, "roles", [])):
+        can_see_inactive = True
+
     service = ProductoService(session)
     productos = await service.get_all(
-        include_inactive=False,  # public endpoint — always filters to active only
+        include_inactive=include_inactive if can_see_inactive else False,
         search=search,
         categoria_id=categoria_id,
         min_price=min_price,

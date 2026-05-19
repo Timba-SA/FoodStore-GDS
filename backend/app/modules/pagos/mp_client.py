@@ -23,17 +23,32 @@ class MercadoPagoClient:
 
     def __init__(self, access_token: Optional[str] = None):
         token = access_token or get_settings().MERCADOPAGO_ACCESS_TOKEN
-        if not token:
-            raise RuntimeError(
-                "MERCADOPAGO_ACCESS_TOKEN no configurado. "
-                "Agregalo al .env para habilitar el módulo de pagos."
+        if not token or token == "your_mercadopago_token":
+            logger.warning(
+                "MERCADOPAGO_ACCESS_TOKEN no configurado o es el valor por defecto. "
+                "Operando en MODO SIMULADO (Mock)."
             )
-        self._sdk = mercadopago.SDK(token)
+            self._mock_mode = True
+        else:
+            self._mock_mode = False
+            self._sdk = mercadopago.SDK(token)
 
     # ── Sync helpers (called inside executor) ────────────────────────────────
 
     def _create_payment_sync(self, payment_data: dict, idempotency_key: str) -> dict:
         """Create a payment via MP API (synchronous)."""
+        if getattr(self, "_mock_mode", False):
+            import uuid
+            return {
+                "status": 201,
+                "response": {
+                    "id": str(uuid.uuid4().int)[:10],
+                    "status": "approved",
+                    "status_detail": "accredited",
+                    "external_reference": payment_data.get("external_reference"),
+                }
+            }
+        
         request_options = mercadopago.config.RequestOptions()
         request_options.custom_headers = {
             "x-idempotency-key": idempotency_key,
@@ -43,6 +58,14 @@ class MercadoPagoClient:
 
     def _get_payment_sync(self, payment_id: str) -> dict:
         """Fetch a payment by ID from MP API (synchronous)."""
+        if getattr(self, "_mock_mode", False):
+            return {
+                "status": 200,
+                "response": {
+                    "id": payment_id,
+                    "status": "approved",
+                }
+            }
         response = self._sdk.payment().get(payment_id)
         return response
 

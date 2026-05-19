@@ -8,6 +8,7 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { queryClient } from '@/shared/query/queryClient'
 
 // ------------------------------------------------------------------ //
 // Types — aligned to backend UserResponse schema                       //
@@ -69,14 +70,16 @@ export const useAuthStore = create<AuthState>()(
 
       setLoading: (loading) => set({ isLoading: loading }),
 
-      clearAuth: () =>
+      clearAuth: () => {
+        queryClient.clear()
         set({
           user: null,
           accessToken: null,
           refreshToken: null,
           isAuthenticated: false,
           isLoading: false,
-        }),
+        })
+      },
         
       hasRole: (allowedRoles) => {
         const user = get().user

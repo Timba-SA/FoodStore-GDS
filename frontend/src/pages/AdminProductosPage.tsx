@@ -24,6 +24,7 @@ function StockBadge({ stock }: { stock: number }) {
 
 export default function AdminProductosPage() {
   const [search, setSearch] = useState('')
+  const [includeInactive, setIncludeInactive] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Producto | undefined>()
   const [deletingId, setDeletingId] = useState<number | null>(null)
@@ -32,10 +33,10 @@ export default function AdminProductosPage() {
   const [stockOp, setStockOp] = useState<'add' | 'subtract' | 'set'>('set')
   const [apiError, setApiError] = useState('')
 
-  // Admin view: include_inactive is forced to false in public GET
-  // For admin we pass search but no include_inactive (backend public endpoint)
+  // For admin we pass search and include_inactive
   const { data: productos = [], isLoading, isError } = useProductos({
     search: search || undefined,
+    include_inactive: includeInactive || undefined,
   })
 
   const createMutation = useCreateProducto()
@@ -110,6 +111,10 @@ export default function AdminProductosPage() {
               placeholder="Buscar por nombre…"
               className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
           </div>
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+            <input type="checkbox" checked={includeInactive} onChange={(e) => setIncludeInactive(e.target.checked)} className="rounded text-orange-500 focus:ring-orange-500" />
+            Mostrar inactivos (eliminados)
+          </label>
           <span className="text-xs text-gray-400 ml-auto">{productos.length} producto{productos.length !== 1 ? 's' : ''}</span>
         </div>
 
@@ -150,8 +155,19 @@ export default function AdminProductosPage() {
                       <td className="px-6 py-4 font-mono text-xs text-gray-500">{p.sku}</td>
                       <td className="px-6 py-4">
                         <div className="font-medium text-gray-900">{p.nombre}</div>
+                        {p.imagen_url && (
+                          <a 
+                            href={p.imagen_url} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="text-[10px] text-blue-500 hover:underline truncate max-w-[200px] block mt-1"
+                            title={p.imagen_url}
+                          >
+                            🔗 {p.imagen_url}
+                          </a>
+                        )}
                         {p.categorias.length > 0 && (
-                          <div className="flex gap-1 mt-0.5">
+                          <div className="flex gap-1 mt-1">
                             {p.categorias.slice(0, 2).map(c => (
                               <span key={c.id} className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">{c.nombre}</span>
                             ))}
@@ -181,10 +197,18 @@ export default function AdminProductosPage() {
                             className="text-orange-600 hover:text-orange-800 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-orange-50 transition">
                             Editar
                           </button>
-                          <button id={`btn-delete-${p.id}`} onClick={() => setDeletingId(p.id)}
-                            className="text-red-500 hover:text-red-700 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition">
-                            Eliminar
-                          </button>
+                          {p.activo ? (
+                            <button id={`btn-delete-${p.id}`} onClick={() => setDeletingId(p.id)}
+                              className="text-red-500 hover:text-red-700 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition">
+                              Eliminar
+                            </button>
+                          ) : (
+                            <button id={`btn-restore-${p.id}`} onClick={() => updateMutation.mutate({ id: p.id, payload: { activo: true } })}
+                              className="text-green-600 hover:text-green-800 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-green-50 transition"
+                              disabled={updateMutation.isPending}>
+                              Activar
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -266,3 +290,4 @@ export default function AdminProductosPage() {
     </div>
   )
 }
+ 

@@ -106,8 +106,13 @@ async def seed_database() -> None:
                     "es_final": False,
                 },
                 {
-                    "nombre": "enviado",
-                    "descripcion": "Order shipped",
+                    "nombre": "en_preparacion",
+                    "descripcion": "Order is being prepared",
+                    "es_final": False,
+                },
+                {
+                    "nombre": "en_camino",
+                    "descripcion": "Order is on the way",
                     "es_final": False,
                 },
                 {
@@ -118,11 +123,6 @@ async def seed_database() -> None:
                 {
                     "nombre": "cancelado",
                     "descripcion": "Order cancelled",
-                    "es_final": True,
-                },
-                {
-                    "nombre": "devuelto",
-                    "descripcion": "Order returned",
                     "es_final": True,
                 },
             ]

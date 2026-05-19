@@ -2,32 +2,29 @@
  * CatalogoPage — Public product catalog with filters and grid layout.
  */
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useProductos } from '@/entities/producto/hooks'
+import { useCategorias } from '@/entities/categoria/hooks'
 import ProductoCard from '@/features/productos/ProductoCard'
 import ProductoDetailModal from '@/features/productos/ProductoDetailModal'
 import type { Producto, ProductosFilters } from '@/entities/producto/types'
 
-// Minimal debounce hook
-function useDebounce<T>(value: T, delay = 400): T {
-  const [debounced, setDebounced] = useState(value)
-  useCallback(() => {
-    const t = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(t)
-  }, [value, delay])
-  return debounced
-}
-
 export default function CatalogoPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const paramCategoria = searchParams.get('categoria')
+
+  const { data: categorias = [] } = useCategorias()
+  const selectedCategoriaId = categorias.find(c => c.slug === paramCategoria)?.id
+
   const [search, setSearch] = useState('')
   const [sinAlergenos, setSinAlergenos] = useState(false)
   const [minPrice, setMinPrice] = useState('')
   const [maxPrice, setMaxPrice] = useState('')
 
-  const debouncedSearch = useDebounce(search, 400)
-
   const filters: ProductosFilters = {
-    search: debouncedSearch || undefined,
+    search: search || undefined,
+    categoria_id: selectedCategoriaId,
     sin_alergenos: sinAlergenos || undefined,
     min_price: minPrice ? parseFloat(minPrice) : undefined,
     max_price: maxPrice ? parseFloat(maxPrice) : undefined,
@@ -49,6 +46,24 @@ export default function CatalogoPage() {
         <aside className="w-64 shrink-0">
           <div className="bg-white/60 backdrop-blur-xl rounded-[2rem] shadow-lg shadow-slate-200/50 border border-white/80 p-6 sticky top-24 space-y-6">
             <h2 className="font-bold text-slate-800 text-sm uppercase tracking-widest">Filtros</h2>
+
+            {paramCategoria && (
+              <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 flex justify-between items-center">
+                <span className="text-sm font-semibold text-orange-800">
+                  Categoría: {categorias.find(c => c.slug === paramCategoria)?.nombre || paramCategoria}
+                </span>
+                <button 
+                  onClick={() => {
+                    const newParams = new URLSearchParams(searchParams)
+                    newParams.delete('categoria')
+                    setSearchParams(newParams)
+                  }}
+                  className="text-orange-500 hover:text-orange-700 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow-sm"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
 
             {/* Search */}
             <div>

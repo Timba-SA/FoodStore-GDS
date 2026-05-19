@@ -17,10 +17,11 @@ export interface NavLink {
 
 export const NAVIGATION_LINKS: NavLink[] = [
   // ── Public ────────────────────────────────────────────────
-  { label: 'Catálogo', path: '/catalogo', icon: 'Store', roles: null },
   { label: 'Iniciar Sesión', path: '/login', icon: 'LogIn', roles: null, hideWhenAuth: true },
 
   // ── Any authenticated user ─────────────────────────────────
+  { label: 'Catálogo', path: '/catalogo', icon: 'Store', roles: [] },
+
   { label: 'Mi Perfil', path: '/perfil', icon: 'UserCircle', roles: [], dividerBefore: true },
   { label: 'Mis Pedidos', path: '/dashboard/pedidos', icon: 'Package', roles: [] },
   { label: 'Mis Direcciones', path: '/dashboard/direcciones', icon: 'MapPin', roles: [] },

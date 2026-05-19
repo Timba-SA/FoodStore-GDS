@@ -26,10 +26,10 @@ class EstadoPedidoEnum(str, Enum):
 
     PENDIENTE = "pendiente"
     CONFIRMADO = "confirmado"
-    ENVIADO = "enviado"
+    EN_PREPARACION = "en_preparacion"
+    EN_CAMINO = "en_camino"
     ENTREGADO = "entregado"
     CANCELADO = "cancelado"
-    DEVUELTO = "devuelto"
 
 
 class FormaPago(BaseModel, table=True):

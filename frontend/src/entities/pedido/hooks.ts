@@ -59,3 +59,13 @@ export function useCancelarPedido() {
     },
   })
 }
+
+export function useOcultarPedido() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => pedidoApi.ocultar(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [PEDIDOS_KEY] })
+    },
+  })
+}

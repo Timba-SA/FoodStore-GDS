@@ -69,6 +69,7 @@ export interface ProductosFilters {
   min_price?: number
   max_price?: number
   sin_alergenos?: boolean
+  include_inactive?: boolean
   skip?: number
   limit?: number
 }

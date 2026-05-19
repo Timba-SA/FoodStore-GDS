@@ -1,13 +1,20 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { loginUser } from '@/shared/api/auth'
-import { Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react'
+import { Mail, Lock, ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react'
+
+const BURNT = '#B85C38'
+const INK   = '#1C140A'
+const CREAM = '#FAF7F2'
+const MUTED = '#6B5D4A'
+const LINE  = '#E2D5C0'
 
 export default function LoginForm() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [email, setEmail]     = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [showPwd, setShowPwd] = useState(false)
+  const [error, setError]     = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -18,82 +25,122 @@ export default function LoginForm() {
       await loginUser(email, password)
       navigate('/catalogo')
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión')
+      setError(err.message || 'Credenciales incorrectas')
     } finally {
       setLoading(false)
     }
   }
 
+  const inputBase: React.CSSProperties = {
+    fontFamily: "'DM Sans', sans-serif",
+    fontSize: '0.9rem',
+    color: INK,
+    background: '#FFFFFF',
+    border: `1.5px solid ${LINE}`,
+    borderRadius: '0.75rem',
+    padding: '0.75rem 0.875rem 0.75rem 2.75rem',
+    outline: 'none',
+    width: '100%',
+    boxSizing: 'border-box' as const,
+    transition: 'border-color 0.2s',
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
       {error && (
-        <div className="flex items-start gap-3 bg-red-50 text-red-700 px-4 py-3.5 rounded-2xl text-sm border border-red-200">
-          <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
-          <span>{error}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', background: '#FEF2F2', color: '#C0392B', border: '1px solid #FCA5A5', borderRadius: '0.75rem', padding: '0.75rem 1rem', fontSize: '0.85rem' }}>
+          <AlertCircle size={15}/> {error}
         </div>
       )}
 
-      <div>
-        <label className="field-label" htmlFor="email">Email</label>
-        <div className="relative">
-          <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+      {/* Email */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+        <label htmlFor="login-email" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.78rem', fontWeight: 600, color: MUTED, letterSpacing: '0.04em', textTransform: 'uppercase' as const }}>
+          Email
+        </label>
+        <div style={{ position: 'relative' }}>
+          <Mail size={15} style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9B8E7B', pointerEvents: 'none' }}/>
           <input
-            id="email"
+            id="login-email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="field-input pl-11"
+            onChange={e => setEmail(e.target.value)}
             required
             autoComplete="email"
             placeholder="tu@email.com"
+            style={inputBase}
+            onFocus={e => { e.currentTarget.style.borderColor = BURNT }}
+            onBlur={e => { e.currentTarget.style.borderColor = LINE }}
           />
         </div>
       </div>
 
-      <div>
-        <label className="field-label" htmlFor="password">Contraseña</label>
-        <div className="relative">
-          <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+      {/* Contraseña */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+        <label htmlFor="login-password" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.78rem', fontWeight: 600, color: MUTED, letterSpacing: '0.04em', textTransform: 'uppercase' as const }}>
+          Contraseña
+        </label>
+        <div style={{ position: 'relative' }}>
+          <Lock size={15} style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: '#9B8E7B', pointerEvents: 'none' }}/>
           <input
-            id="password"
-            type="password"
+            id="login-password"
+            type={showPwd ? 'text' : 'password'}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="field-input pl-11"
+            onChange={e => setPassword(e.target.value)}
             required
             autoComplete="current-password"
             placeholder="••••••••"
+            style={{ ...inputBase, paddingRight: '2.75rem' }}
+            onFocus={e => { e.currentTarget.style.borderColor = BURNT }}
+            onBlur={e => { e.currentTarget.style.borderColor = LINE }}
           />
+          <button
+            type="button"
+            onClick={() => setShowPwd(v => !v)}
+            style={{ position: 'absolute', right: '0.875rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9B8E7B', padding: 0 }}
+          >
+            {showPwd ? <EyeOff size={15}/> : <Eye size={15}/>}
+          </button>
         </div>
       </div>
 
+      {/* Submit */}
       <button
         type="submit"
         disabled={loading}
-        className="btn-primary w-full py-3.5 text-base"
+        style={{
+          marginTop: '0.25rem',
+          fontFamily: "'DM Sans', sans-serif",
+          fontWeight: 700,
+          fontSize: '0.95rem',
+          color: CREAM,
+          background: loading ? '#9B8E7B' : INK,
+          border: 'none',
+          borderRadius: '0.75rem',
+          padding: '0.9rem',
+          cursor: loading ? 'not-allowed' : 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.5rem',
+          transition: 'background 0.2s',
+          boxShadow: '0 4px 20px rgba(28,20,10,0.18)',
+        }}
+        onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = '#2e2010' }}
+        onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = INK }}
       >
         {loading ? (
-          <span className="flex items-center gap-2">
-            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <svg style={{ animation: 'spin 1s linear infinite', width: 16, height: 16 }} viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25"/>
+              <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
             </svg>
             Ingresando...
           </span>
         ) : (
-          <span className="flex items-center gap-2">
-            Iniciar Sesión
-            <ArrowRight size={16} />
-          </span>
+          <><span>Iniciar Sesión</span><ArrowRight size={16}/></>
         )}
       </button>
-
-      <p className="text-center text-sm text-slate-500">
-        ¿No tenés cuenta?{' '}
-        <Link to="/registro" className="font-bold text-orange-600 hover:text-orange-700 transition-colors">
-          Registrate acá
-        </Link>
-      </p>
     </form>
   )
 }

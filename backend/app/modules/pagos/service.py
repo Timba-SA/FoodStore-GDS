@@ -48,13 +48,13 @@ class PagoService:
     # ── Private helpers ───────────────────────────────────────────────────────
 
     async def _get_forma_pago_mp_id(self) -> int:
-        """Get the ID of the 'mercadopago' FormaPago record."""
+        """Get the ID of the 'mercado_pago' FormaPago record."""
         result = await self.session.execute(
-            select(FormaPago).where(FormaPago.nombre == "mercadopago")
+            select(FormaPago).where(FormaPago.nombre == "mercado_pago")
         )
         fp = result.scalars().first()
         if not fp:
-            raise ValueError("FormaPago 'mercadopago' not found. Run migrations to seed it.")
+            raise ValueError("FormaPago 'mercado_pago' not found. Run migrations to seed it.")
         return fp.id
 
     async def _get_pedido(self, pedido_id: int) -> Pedido:
@@ -122,7 +122,7 @@ class PagoService:
         mp_response = await self.mp_client.create_payment(payment_data, idempotency_key)
         mp_body = mp_response.get("response", {})
         mp_payment_id = str(mp_body.get("id", ""))
-        mp_status = mp_body.get("status", "pending")
+        mp_status = str(mp_body.get("status", "pending"))
         http_status = mp_response.get("status", 0)
 
         logger.info(

@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 
 from app.core.dependencies import get_db
 from app.core.rate_limit import limiter
@@ -74,6 +75,30 @@ async def get_current_user(
         creado_en=user.created_at,
         actualizado_en=user.updated_at,
     )
+
+async def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials = Security(bearer_scheme),
+    session: AsyncSession = Depends(get_db),
+) -> Optional[UserResponse]:
+    """Dependency that returns the current user if token is provided and valid, otherwise None."""
+    if not credentials:
+        return None
+    
+    auth_service = AuthService(session)
+    try:
+        user = await auth_service.get_current_user(credentials.credentials)
+        roles = await auth_service.get_user_roles(user.id)
+        return UserResponse(
+            id=user.id,
+            nombre=user.nombre,
+            email=user.email,
+            numero_telefono=user.numero_telefono,
+            roles=roles,
+            creado_en=user.created_at,
+            actualizado_en=user.updated_at,
+        )
+    except ValueError:
+        return None
 
 def require_role(allowed_roles: list[str]):
     """Dependency factory that checks if the current user has at least one of the allowed roles.

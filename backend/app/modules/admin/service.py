@@ -93,8 +93,8 @@ class AdminService:
             numero_telefono=data.numero_telefono,
             activo=True,
             verificado=True,  # Manual creation → consider verified
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
         )
         self.session.add(user)
         await self.session.flush()
@@ -133,7 +133,7 @@ class AdminService:
                 raise ValueError(f"El email '{data.email}' ya está en uso.")
             user.email = data.email
 
-        user.updated_at = datetime.now(timezone.utc)
+        user.updated_at = datetime.utcnow()
         await self.session.flush()
         return user
 
@@ -146,9 +146,9 @@ class AdminService:
         if not user or user.deleted_at is not None:
             raise ValueError("Usuario no encontrado.")
 
-        user.deleted_at = datetime.now(timezone.utc)
+        user.deleted_at = datetime.utcnow()
         user.activo = False
-        user.updated_at = datetime.now(timezone.utc)
+        user.updated_at = datetime.utcnow()
         await self.session.flush()
 
     async def get_deleted_records(self) -> dict:

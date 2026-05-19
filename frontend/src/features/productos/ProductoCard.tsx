@@ -31,7 +31,21 @@ export default function ProductoCard({ producto, onAddToCart, style }: Props) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
-          <span className="text-5xl select-none group-hover:scale-110 transition-transform duration-500">🍽️</span>
+          <div className="flex flex-col items-center justify-center p-4 text-center">
+            <span className="text-4xl select-none group-hover:scale-110 transition-transform duration-500 mb-2">🍽️</span>
+            {producto.imagen_url && (
+              <a 
+                href={producto.imagen_url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[10px] text-orange-600 hover:underline break-all relative z-10 line-clamp-2 px-2"
+                onClick={(e) => e.stopPropagation()}
+                title={producto.imagen_url}
+              >
+                {producto.imagen_url}
+              </a>
+            )}
+          </div>
         )}
         {hasAlergenos && (
           <span className="absolute top-3 right-3 bg-orange-100/90 backdrop-blur-sm text-orange-700 text-[10px] font-bold px-2.5 py-1 rounded-full border border-orange-200/50 shadow-sm">

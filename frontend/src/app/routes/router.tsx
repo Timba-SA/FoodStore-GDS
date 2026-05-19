@@ -15,14 +15,7 @@ import AdminStockPage from '../../pages/AdminStockPage'
 import AdminPedidosPage from '../../pages/AdminPedidosPage'
 import PerfilPage from '../../pages/PerfilPage'
 import ProtectedRoute from '../../shared/components/ProtectedRoute'
-
-// Pages
-const HomePage = () => (
-  <div className="flex h-screen items-center justify-center">
-    <h1 className="text-4xl font-bold">FoodStore</h1>
-  </div>
-)
-
+import LandingPage from '../../pages/LandingPage'
 
 
 const DashboardPage = () => (
@@ -61,21 +54,23 @@ const NotFoundPage = () => (
 
 export const router = createBrowserRouter([
   {
+    // Landing standalone — sin MainLayout (Sidebar/Navbar del shell)
     path: '/',
+    element: <LandingPage />,
+  },
+  {
+    path: 'login',
+    element: <LoginPage />,
+  },
+  {
+    path: 'registro',
+    element: <RegisterPage />,
+  },
+  {
+    // Shell de la app — layout route SIN path propio.
+    // Envuelve todas las rutas de la app con MainLayout (Sidebar + Navbar).
     element: <App />,
     children: [
-      {
-        index: true,
-        element: <HomePage />,
-      },
-      {
-        path: 'login',
-        element: <LoginPage />,
-      },
-      {
-        path: 'registro',
-        element: <RegisterPage />,
-      },
       {
         path: '403',
         element: <ForbiddenPage />,

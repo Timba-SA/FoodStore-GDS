@@ -131,8 +131,9 @@ async def list_pedidos(
     current_user=Depends(get_current_user),
 ):
     service = PedidoService(session)
-    is_admin = _is_admin(current_user)
-    pedidos = await service.get_pedidos(current_user.id, is_admin=is_admin, estado=estado)
+    # Always fetch only the current user's orders for this endpoint.
+    # The Admin Dashboard uses /admin/pedidos to list all orders system-wide.
+    pedidos = await service.get_pedidos(current_user.id, is_admin=False, estado=estado)
     result = []
     for pedido in pedidos:
         nombre = await _get_estado_nombre(pedido, session)
@@ -236,4 +237,34 @@ async def cancelar_pedido(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al cancelar pedido: {exc}",
+        )
+
+@router.delete(
+    "/{pedido_id}/ocultar",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Hide cancelled order",
+)
+async def ocultar_pedido(
+    pedido_id: int,
+    session: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    service = PedidoService(session)
+    try:
+        await service.ocultar(
+            pedido_id=pedido_id,
+            usuario_id=current_user.id,
+        )
+        await session.commit()
+    except PermissionError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    except ValueError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except Exception as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al ocultar pedido: {exc}",
         )

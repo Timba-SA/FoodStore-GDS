@@ -28,4 +28,7 @@ export const pedidoApi = {
 
   cancelar: (id: number): Promise<void> =>
     client.delete(`/pedidos/${id}`).then(() => undefined),
+
+  ocultar: (id: number): Promise<void> =>
+    client.delete(`/pedidos/${id}/ocultar`).then(() => undefined),
 }

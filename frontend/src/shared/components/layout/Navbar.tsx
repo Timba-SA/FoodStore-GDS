@@ -4,9 +4,10 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Menu, ShoppingCart, LogOut, UserCircle, ChevronDown, Sparkles } from 'lucide-react'
+import { Menu, ShoppingCart, LogOut, UserCircle, ChevronDown } from 'lucide-react'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { useCartStore } from '@/entities/cart/store'
+import { queryClient } from '@/shared/query/queryClient'
 
 interface NavbarProps {
   onMenuClick: () => void
@@ -35,6 +36,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
   function handleLogout() {
     clearAuth()
+    queryClient.clear()
     navigate('/login')
     setDropdownOpen(false)
   }
@@ -117,16 +119,7 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
               </div>
             )}
           </div>
-        ) : (
-          <Link
-            to="/login"
-            id="btn-nav-login"
-            className="flex items-center gap-1.5 text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-1.5 rounded-xl hover:from-orange-600 hover:to-orange-700 shadow-sm shadow-orange-500/20 hover:shadow-md transition-all duration-200"
-          >
-            <Sparkles size={13} />
-            Iniciar Sesión
-          </Link>
-        )}
+        ) : null}
       </div>
     </header>
   )

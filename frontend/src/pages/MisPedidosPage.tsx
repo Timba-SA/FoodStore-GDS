@@ -5,7 +5,7 @@
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { usePedidos } from '@/entities/pedido/hooks'
+import { usePedidos, useOcultarPedido } from '@/entities/pedido/hooks'
 import PedidoDetailModal from '@/features/pedidos/PedidoDetailModal'
 
 const ESTADO_BADGE: Record<string, string> = {
@@ -28,8 +28,16 @@ const ESTADO_ICONS: Record<string, string> = {
 
 export default function MisPedidosPage() {
   const { data: pedidos = [], isLoading } = usePedidos()
+  const ocultarPedido = useOcultarPedido()
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const navigate = useNavigate()
+
+  async function handleOcultar(e: React.MouseEvent, id: number) {
+    e.stopPropagation()
+    if (confirm('¿Estás seguro de que querés eliminar este pedido de tu historial?')) {
+      await ocultarPedido.mutateAsync(id)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -96,6 +104,16 @@ export default function MisPedidosPage() {
                         className="text-xs bg-orange-600 text-white font-semibold px-3 py-1 rounded-lg hover:bg-orange-700 transition"
                       >
                         💳 Pagar
+                      </button>
+                    )}
+                    {p.estado_nombre === 'cancelado' && (
+                      <button
+                        id={`btn-ocultar-${p.id}`}
+                        onClick={(e) => handleOcultar(e, p.id)}
+                        disabled={ocultarPedido.isPending}
+                        className="text-xs bg-red-100 text-red-600 font-semibold px-3 py-1 rounded-lg hover:bg-red-200 transition disabled:opacity-50"
+                      >
+                        🗑️ Eliminar
                       </button>
                     )}
                     <span className="text-gray-300 group-hover:text-orange-400 transition">›</span>

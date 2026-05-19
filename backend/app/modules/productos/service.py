@@ -50,11 +50,10 @@ class ProductoService:
             )
         )
 
-    async def get_by_id(self, producto_id: int) -> Optional[Producto]:
-        stmt = self._product_stmt().where(
-            Producto.id == producto_id,
-            Producto.deleted_at.is_(None),
-        )
+    async def get_by_id(self, producto_id: int, include_inactive: bool = False) -> Optional[Producto]:
+        stmt = self._product_stmt().where(Producto.id == producto_id)
+        if not include_inactive:
+            stmt = stmt.where(Producto.deleted_at.is_(None))
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -181,7 +180,7 @@ class ProductoService:
         return result.scalar_one()
 
     async def update(self, producto_id: int, payload: ProductoUpdate) -> Producto:
-        producto = await self.get_by_id(producto_id)
+        producto = await self.get_by_id(producto_id, include_inactive=True)
         if producto is None:
             raise ValueError(f"Producto {producto_id} not found")
 
@@ -200,6 +199,8 @@ class ProductoService:
             producto.imagen_url = payload.imagen_url
         if payload.activo is not None:
             producto.activo = payload.activo
+            if payload.activo:
+                producto.deleted_at = None
         if payload.es_alergeno is not None:
             producto.es_alergeno = payload.es_alergeno
 
@@ -221,7 +222,7 @@ class ProductoService:
         return result.scalar_one()
 
     async def update_stock(self, producto_id: int, payload: ProductoStockUpdate) -> Producto:
-        producto = await self.get_by_id(producto_id)
+        producto = await self.get_by_id(producto_id, include_inactive=True)
         if producto is None:
             raise ValueError(f"Producto {producto_id} not found")
 

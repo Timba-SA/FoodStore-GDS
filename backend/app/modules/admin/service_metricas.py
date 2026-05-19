@@ -4,7 +4,7 @@ MetricsService — Business metrics aggregation using SQLAlchemy ORM.
 All queries run as async. No raw SQL — keeps type safety.
 """
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,10 +41,8 @@ class MetricsService:
         )
         total_ingresos = float(total_ingresos_r.scalar() or 0)
 
-        # Today boundaries (UTC)
-        today_start = datetime.now(timezone.utc).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
+        # Today boundaries (naive UTC — columna created_at es TIMESTAMP WITHOUT TIME ZONE)
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         today_end = today_start + timedelta(days=1)
 
         pedidos_hoy_r = await self.session.execute(
@@ -96,10 +94,10 @@ class MetricsService:
     async def get_ventas(self, dias: int = 7) -> list[VentaDelDia]:
         """Daily revenue for the last N days (approved payments only)."""
         results = []
-        today = datetime.now(timezone.utc).date()
+        today = datetime.utcnow().date()
         for i in range(dias - 1, -1, -1):
             day = today - timedelta(days=i)
-            day_start = datetime(day.year, day.month, day.day, tzinfo=timezone.utc)
+            day_start = datetime(day.year, day.month, day.day)  # naive UTC
             day_end = day_start + timedelta(days=1)
 
             r = await self.session.execute(

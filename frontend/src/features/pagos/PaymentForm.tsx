@@ -55,10 +55,17 @@ export default function PaymentForm({ pedidoId, onSuccess, onError }: Props) {
 
   if (!MP_PUBLIC_KEY) {
     return (
-      <div className="bg-yellow-50 border border-yellow-300 rounded-xl px-4 py-3 text-sm text-yellow-800">
-        ⚠️ MercadoPago no está configurado en este entorno. Agregá{' '}
-        <code className="font-mono bg-yellow-100 px-1 rounded">VITE_MP_PUBLIC_KEY</code> al{' '}
-        <code className="font-mono bg-yellow-100 px-1 rounded">.env</code>.
+      <div className="bg-yellow-50 border border-yellow-300 rounded-xl px-4 py-4 text-sm text-yellow-800 space-y-3">
+        <p>⚠️ MercadoPago no está configurado (falta VITE_MP_PUBLIC_KEY en .env).</p>
+        <p>Como estás en entorno de desarrollo, podés simular un pago exitoso para probar el flujo de la demo.</p>
+        <button
+          type="button"
+          disabled={processPayment.isPending}
+          onClick={() => handleSubmit({ token: 'mock_token', installments: 1, payment_method_id: 'mock', issuer_id: 'mock', payer: { email: 'mock@foodstore.com' } })}
+          className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2.5 px-4 rounded-xl transition-colors disabled:opacity-50"
+        >
+          {processPayment.isPending ? 'Procesando...' : 'Simular Pago Aprobado'}
+        </button>
       </div>
     )
   }

@@ -95,6 +95,11 @@ client.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    // Do not attempt refresh or redirect if the login request itself failed
+    if (originalRequest.url?.includes('/auth/login')) {
+      return Promise.reject(error)
+    }
+
     const { refreshToken, setAccessToken, setRefreshToken, clearAuth } =
       useAuthStore.getState()
 

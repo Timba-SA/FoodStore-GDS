@@ -52,6 +52,15 @@ export const NAVIGATION_LINKS: NavLink[] = [
     dividerBefore: true,
   },
 
+  // ── Cocina + Pedidos + Admin ────────────────────────────────
+  {
+    label: 'Pantalla Cocina',
+    path: '/cocina',
+    icon: 'ChefHat',
+    roles: ['admin', 'pedidos', 'cocina'],
+    dividerBefore: true,
+  },
+
   // ── Admin only ─────────────────────────────────────────────
   {
     label: 'Métricas',

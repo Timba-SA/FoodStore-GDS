@@ -25,7 +25,9 @@ from app.modules.auth.service import AuthService
 @pytest.fixture
 def client():
     """Sync TestClient — works with async FastAPI via ASGI transport."""
-    return TestClient(app, raise_server_exceptions=False)
+    app.dependency_overrides.clear()
+    yield TestClient(app, raise_server_exceptions=False)
+    app.dependency_overrides.clear()
 
 
 def make_token_response(email: str = "user@example.com") -> TokenResponse:
@@ -255,14 +257,13 @@ class TestMeEndpoint:
             creado_en=datetime.now(timezone.utc),
             actualizado_en=datetime.now(timezone.utc),
         )
-        with patch(
-            "app.modules.auth.router.get_current_user",
-            AsyncMock(return_value=user_resp),
-        ):
-            resp = client.get(
-                "/api/v1/auth/me",
-                headers={"Authorization": "Bearer some.valid.token"},
-            )
+        from app.modules.auth.router import get_current_user
+        app.dependency_overrides[get_current_user] = lambda: user_resp
+        
+        resp = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": "Bearer some.valid.token"},
+        )
         assert resp.status_code == 200
         body = resp.json()
         assert body["email"] == "user@example.com"

@@ -45,6 +45,11 @@ class Producto(BaseModel, table=True):
         default=True,
         description="Whether product is available for sale",
     )
+    disponible: bool = Field(
+        default=True,
+        index=True,
+        description="Whether product is currently available to order",
+    )
     es_alergeno: bool = Field(
         default=False,
         description="Whether product is manually marked as allergen",

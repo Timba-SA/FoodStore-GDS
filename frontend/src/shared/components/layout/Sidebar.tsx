@@ -4,7 +4,7 @@
 
 import {
   Store, LogIn, UserCircle, Package, MapPin, Layers,
-  Box, Tags, Apple, ClipboardList, LineChart, Users, X, ShoppingCart,
+  Box, Tags, Apple, ClipboardList, LineChart, Users, X, ShoppingCart, ChefHat,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useAuthStore } from '@/features/auth/store/authStore'
@@ -14,7 +14,7 @@ import type { LucideIcon } from 'lucide-react'
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Store, LogIn, UserCircle, Package, MapPin, Layers,
-  Box, Tags, Apple, ClipboardList, LineChart, Users, ShoppingCart,
+  Box, Tags, Apple, ClipboardList, LineChart, Users, ShoppingCart, ChefHat,
 }
 
 function NavIcon({ name, size = 18 }: { name: string; size?: number }) {

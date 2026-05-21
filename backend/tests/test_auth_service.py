@@ -54,6 +54,7 @@ def make_user(user_id: int = 1, email: str = "user@example.com") -> MagicMock:
     user.hashed_password = AuthService.hash_password("ValidPass123!")
     user.numero_telefono = None
     user.activo = True
+    user.deleted_at = None
     user.created_at = datetime.now(timezone.utc)
     user.updated_at = datetime.now(timezone.utc)
     return user
@@ -217,16 +218,16 @@ class TestRefreshRotation:
         with patch.object(service.token_repo, "get_by_token_hash", AsyncMock(return_value=rt)), \
              patch.object(service, "get_user_by_id", AsyncMock(return_value=user)), \
              patch.object(service, "get_user_roles", AsyncMock(return_value=["customer"])), \
-             patch.object(service.token_repo, "revoke_family_single", AsyncMock()), \
+             patch.object(service.token_repo, "revoke_family_single", AsyncMock()) as mock_revoke, \
              patch.object(service, "_create_refresh_token_record", AsyncMock(return_value=("new-raw", MagicMock(id=99)))), \
-             patch.object(service.token_repo, "link_replaced_by", AsyncMock()), \
+             patch.object(service.token_repo, "link_replaced_by", AsyncMock()) as mock_link, \
              patch.object(service, "_build_user_response", AsyncMock(return_value=MagicMock(id=user.id, email=user.email, nombre=user.nombre, numero_telefono=None, roles=["customer"], creado_en=user.created_at, actualizado_en=user.updated_at))):
             resp = await service.refresh(raw)
 
         assert resp.refresh_token == "new-raw"
         assert resp.access_token
-        service.token_repo.revoke_family_single.assert_awaited_once_with(rt.id)
-        service.token_repo.link_replaced_by.assert_awaited_once()
+        mock_revoke.assert_awaited_once_with(rt.id)
+        mock_link.assert_awaited_once()
 
     async def test_expired_token_raises_value_error(self, service):
         raw, rt = make_refresh_token(expired=True)

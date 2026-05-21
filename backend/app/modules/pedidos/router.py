@@ -190,12 +190,16 @@ async def avanzar_estado(
             pedido_id=pedido_id,
             nuevo_estado_nombre=data.nuevo_estado,
             usuario_id=current_user.id,
+            roles=current_user.roles,
             nota=data.nota,
         )
         await session.commit()
         pedido = await service.get_by_id(pedido_id, current_user.id, is_admin=True)
         estado_nombre = await _get_estado_nombre(pedido, session)
         return _pedido_to_response(pedido, estado_nombre)
+    except PermissionError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
     except ValueError as exc:
         await session.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))

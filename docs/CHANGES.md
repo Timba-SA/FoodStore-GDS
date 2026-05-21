@@ -11,7 +11,7 @@
 
 Este documento define el **mapa completo de changes** para desarrollar Food Store desde cero hasta producción. Cada change es una unidad mínima de trabajo que abarca una funcionalidad o dominio completo, con sus propios artefactos (proposal, design, tasks).
 
-El flujo se organiza en **13 changes** distribuidos en 7 épicas temáticas, respetando dependencias estrictas. **NO implementes ningún change sin tener aprobados su proposal y design.**
+El flujo se organiza en **17 changes** distribuidos en 9 épicas temáticas, respetando dependencias estrictas. **NO implementes ningún change sin tener aprobados su proposal y design.**
 
 ---
 
@@ -1122,6 +1122,78 @@ Implementación de navegación y layout base compartido por toda la aplicación,
 
 ---
 
+# ÉPICA 08 — Display de Cocina (KDS)
+
+## 08-display-cocina-kds
+
+### Metadata
+- **ID**: 08-display-cocina-kds
+- **Épica**: ÉPICA 08 — Display de Cocina (KDS)
+- **Prioridad**: Alta
+- **Esfuerzo estimado**: 3 semanas
+
+### Descripción
+Implementación de la pantalla de cocina (Kitchen Display System - KDS) en tiempo real (WebSocket o SSE) para el control operativo de preparación de pedidos, agregando soporte para el nuevo rol `COCINA` en el backend (RBAC) y frontend (navegación y guard de rutas), control de transiciones de FSM específicas de cocina, alertas visuales/sonoras, timer de urgencia, resiliencia con fallback a polling y auditoría de cambios de estado.
+
+### Historias de Usuario (HUs) Cubiertas
+- US-COCINA-01: Ver pedidos a preparar en tiempo real (núcleo del KDS)
+- US-COCINA-02: Tomar un pedido (marcar EN_PREPARACIÓN)
+- US-COCINA-03: Marcar pedido terminado (EN_CAMINO)
+- US-COCINA-04: Setup del rol COCINA y acceso al KDS
+- US-COCINA-05: Alerta visual/sonora al llegar un pedido nuevo
+- US-COCINA-06: Indicador de urgencia por tiempo de espera
+- US-COCINA-07: Marcar producto como no disponible (opcional)
+- US-COCINA-08: Resiliencia: fallback por polling si cae el WebSocket
+- US-COCINA-09: Auditoría de avances de estado hechos por cocina
+
+### Dependencias
+- 01-auth-jwt-register-login (necesita autenticación y JWT)
+- 01-rbac-roles-permissions (necesita el require_role para proteger endpoints y rutas)
+- 05-pedidos-creacion-fsm (necesita FSM de pedidos y tabla HistorialEstadoPedido)
+- 06-pagos-mercadopago (los pedidos entran a cocina tras pago aprobado: CONFIRMADO)
+
+### Funcionalidades Clave
+- **Base de Datos y Seguridad**:
+  - Registro del nuevo rol `COCINA` en la tabla `Rol` vía seed (`INSERT ... ON CONFLICT DO NOTHING`).
+  - Asignación de rol `COCINA` en `UsuarioRol` y actualización del token JWT para incluirlo.
+  - Validación en el backend del rol `COCINA` en los endpoints correspondientes mediante `require_role`.
+  - Verificación estricta de transiciones autorizadas para el rol `COCINA` en el servicio del FSM (retorna 403 ante intentos inválidos).
+- **Backend (Tiempo Real y REST)**:
+  - Servidor WebSocket o SSE en FastAPI para envío bidireccional/unidireccional de eventos en tiempo real.
+  - Endpoint de consulta REST `GET /api/v1/cocina/pedidos` como fallback y carga inicial (pedidos en `CONFIRMADO` o `EN_PREP` ordenados por antigüedad ascendente).
+  - Emisión de eventos en tiempo real al cambiar estado de pedidos: `PEDIDO_CONFIRMADO`, `PEDIDO_EN_PREPARACION`, `PEDIDO_EN_CAMINO`, `PEDIDO_CANCELADO`.
+  - Endpoint para cambiar la disponibilidad de productos por el Cocinero: `PATCH /api/v1/cocina/productos/{id}/disponibilidad` (modifica `Producto.disponible` sin alterar `stock_cantidad`).
+- **Frontend (KDS en React)**:
+  - Nueva pantalla KDS en `/cocina` con dos columnas: "Por preparar" (`CONFIRMADO`) y "En preparación" (`EN_PREP`).
+  - Tarjetas detalladas de pedidos con número de pedido, ítems (`nombre_snapshot` × `cantidad`), exclusiones de ingredientes en `personalizacion`, `notas` del cliente y timer de urgencia.
+  - Gestión de conexión WebSocket/SSE resiliente con indicador visual de estado y reconexión automática + fallback a polling REST de 30 segundos ante desconexión.
+  - Alerta sonora y visual al recibir pedidos nuevos en la cola, con toggle para silenciar y persistencia en localStorage.
+  - Timer de urgencia en el cliente que se actualiza cada 15 segundos y resalta tarjetas en naranja (10-20 min de espera) o rojo (>20 min de espera).
+  - Menú y Sidebar adaptados dinámicamente según el rol `COCINA`, con guard de rutas y exclusión del auto-logout por inactividad.
+
+### Criterios de Aceptación Resumidos
+- [ ] Seed de base de datos incluye el rol `COCINA` y usuario de prueba `cocina@foodstore.com`.
+- [ ] Endpoint `GET /api/v1/cocina/pedidos` retorna únicamente pedidos en `CONFIRMADO` y `EN_PREP` ordenados por antigüedad (`created_at` del historial de entrada a cocina).
+- [ ] Handshake de WebSocket de cocina requiere un JWT válido con rol `COCINA`, `PEDIDOS` o `ADMIN`.
+- [ ] El rol `COCINA` solo puede realizar las transiciones `CONFIRMADO → EN_PREP` y `EN_PREP → EN_CAMINO`. Intentos de otras transiciones devuelven HTTP 403.
+- [ ] Las transiciones de cocina se registran en `HistorialEstadoPedido` de forma atómica y append-only (con el id del cocinero).
+- [ ] El KDS en `/cocina` muestra las columnas "Por preparar" y "En preparación" con las tarjetas de pedidos completas y actualizadas instantáneamente por eventos push.
+- [ ] Ante desconexión del WebSocket/SSE, el KDS activa polling automático cada 30 segundos y lo detiene al reconectar.
+- [ ] Alertas visuales y sonoras (Web Audio API) funcionan con toggle ON/OFF persistido en localStorage.
+- [ ] Timer de urgencia actualiza colores de las tarjetas cada 15s de acuerdo a los rangos (<10m normal, 10m-20m naranja, >20m rojo).
+- [ ] El Cocinero puede cambiar el flag `disponible` de un producto a `false`, ocultándolo inmediatamente del catálogo público, sin modificar su stock.
+
+### Reglas de Negocio (RN) Relevantes
+- RN-CO01, RN-CO02, RN-CO03, RN-CO04, RN-CO05, RN-CO06, RN-CO07, RN-CO08, RN-FS01, RN-FS07, RN-FS09
+
+### Notas Técnicas
+- **En proceso vs Bus Externo**: La v1 implementa un gestor de conexiones WebSocket (`asyncio.Lock` y un `set` de sockets activos) en memoria del proceso, limitándolo a deployments single-instance. Dejar la arquitectura preparada para un bus pub/sub (Redis) para escalabilidad multi-instancia en el futuro.
+- **SSE como Alternativa**: Al ser un flujo mayormente unidireccional (servidor -> cocina), Server-Sent Events es un enfoque alternativo simple y muy defendible. Justificar la elección tecnológica final en el `design.md`.
+- **Cálculo de Antigüedad**: El timer toma como inicio el `created_at` de la entrada del pedido al estado `CONFIRMADO` (cuando se aprobó el pago).
+- **Web Audio API**: Para evitar la necesidad de importar archivos de audio externos pesados, sintetizar el tono del beep programáticamente usando un `OscillatorNode` en el navegador.
+
+---
+
 # Dependencias Globales (Summary)
 
 ```
@@ -1134,6 +1206,7 @@ Implementación de navegación y layout base compartido por toda la aplicación,
     │   │   │       └── 04-carrito-cliente
     │   │   │           └── 05-pedidos-creacion-fsm
     │   │   │               └── 06-pagos-mercadopago
+    │   │   │                   └── 08-display-cocina-kds
     │   │   └── 03-direcciones-entrega
     │   ├── 01-auth-jwt-register-login
     │   │   └── 01-rbac-roles-permissions
@@ -1162,10 +1235,11 @@ Implementación de navegación y layout base compartido por toda la aplicación,
 | 13     | 04-carrito-cliente | Carrito |
 | 14-17  | 05-pedidos-creacion-fsm | Pedidos (núcleo) |
 | 18-20  | 06-pagos-mercadopago | Pagos |
-| 21-22  | 07-admin-dashboard-metricas, 07-navegacion-layout-base | Admin |
-| 23     | Testing, bug fixes, deploy | QA |
+| 21-23  | 08-display-cocina-kds | Display de Cocina (KDS) |
+| 24-25  | 07-admin-dashboard-metricas, 07-navegacion-layout-base | Admin |
+| 26     | Testing, bug fixes, deploy | QA |
 
-**Total estimado:** 23 semanas (5-6 meses con equipo chico)
+**Total estimado:** 26 semanas (6 meses con equipo chico)
 
 ---
 

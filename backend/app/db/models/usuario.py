@@ -28,6 +28,7 @@ class RolEnum(str, Enum):
     STOCK = "stock"
     PEDIDOS = "pedidos"
     CLIENT = "client"
+    COCINA = "cocina"
 
 
 # ---------------------------------------------------------------------------

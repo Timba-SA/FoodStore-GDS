@@ -16,6 +16,7 @@ import AdminPedidosPage from '../../pages/AdminPedidosPage'
 import PerfilPage from '../../pages/PerfilPage'
 import ProtectedRoute from '../../shared/components/ProtectedRoute'
 import LandingPage from '../../pages/LandingPage'
+import CocinaPage from '../../pages/CocinaPage'
 
 
 const DashboardPage = () => (
@@ -139,6 +140,15 @@ export const router = createBrowserRouter([
           {
             path: 'admin/stock',
             element: <AdminStockPage />,
+          },
+        ],
+      },
+      {
+        element: <ProtectedRoute allowedRoles={['admin', 'pedidos', 'cocina']} />,
+        children: [
+          {
+            path: 'cocina',
+            element: <CocinaPage />,
           },
         ],
       },

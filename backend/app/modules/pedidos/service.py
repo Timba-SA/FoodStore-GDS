@@ -205,6 +205,7 @@ class PedidoService:
         pedido_id: int,
         nuevo_estado_nombre: str,
         usuario_id: int,
+        roles: Optional[list[str]] = None,
         nota: Optional[str] = None,
     ) -> Pedido:
         """Advance the order's FSM state. Validates transition and deducts stock if needed."""
@@ -217,6 +218,18 @@ class PedidoService:
         estado_actual = result.scalars().first()
         if not estado_actual:
             raise ValueError("Estado actual del pedido no encontrado.")
+
+        # Enforce role-based restrictions
+        # If user has "cocina" and does not have "admin" or "pedidos":
+        if roles and "cocina" in roles and not any(r in roles for r in ["admin", "pedidos"]):
+            allowed_transitions = {
+                ("confirmado", "en_preparacion"),
+                ("en_preparacion", "en_camino"),
+            }
+            if (estado_actual.nombre, nuevo_estado_nombre) not in allowed_transitions:
+                raise PermissionError(
+                    f"El rol cocina no está autorizado para la transición: {estado_actual.nombre} -> {nuevo_estado_nombre}"
+                )
 
         # Validate FSM transition
         allowed = FSM_TRANSITIONS.get(estado_actual.nombre, set())
@@ -264,6 +277,19 @@ class PedidoService:
             updated_at=datetime.utcnow(),
         )
         self.session.add(historial)
+
+        # Trigger WebSocket broadcast event for changes
+        try:
+            from app.modules.cocina.service import cocina_ws_manager
+            await cocina_ws_manager.broadcast({
+                "event": "pedido_actualizado",
+                "pedido_id": pedido.id,
+                "estado": nuevo_estado_nombre,
+                "usuario_id": usuario_id
+            })
+        except Exception as ws_err:
+            logger.error(f"Error broadcasting WebSocket update: {ws_err}")
+
         return pedido
 
     async def cancelar(

@@ -1,0 +1,13 @@
+change: 08-display-cocina-kds
+current_phase: archive
+completed_phases:
+  - explore
+  - propose
+  - spec
+  - design
+  - tasks
+  - apply
+  - verify
+next_recommended: none
+
+

@@ -56,6 +56,22 @@ class MercadoPagoClient:
         response = self._sdk.payment().create(payment_data, request_options)
         return response
 
+    def _create_preference_sync(self, preference_data: dict) -> dict:
+        """Create a payment preference via MP API (synchronous)."""
+        if getattr(self, "_mock_mode", False):
+            import uuid
+            pref_id = f"mock-pref-{uuid.uuid4().hex[:12]}"
+            return {
+                "status": 201,
+                "response": {
+                    "id": pref_id,
+                    "init_point": f"http://localhost:5173/dashboard/pedidos?payment_status=success&preference_id={pref_id}",
+                    "sandbox_init_point": f"http://localhost:5173/dashboard/pedidos?payment_status=success&preference_id={pref_id}",
+                }
+            }
+        response = self._sdk.preference().create(preference_data)
+        return response
+
     def _get_payment_sync(self, payment_id: str) -> dict:
         """Fetch a payment by ID from MP API (synchronous)."""
         if getattr(self, "_mock_mode", False):
@@ -77,6 +93,14 @@ class MercadoPagoClient:
         return await loop.run_in_executor(
             None,
             partial(self._create_payment_sync, payment_data, idempotency_key),
+        )
+
+    async def create_preference(self, preference_data: dict) -> dict:
+        """Create a payment preference (runs in thread executor)."""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            None,
+            partial(self._create_preference_sync, preference_data),
         )
 
     async def get_payment(self, payment_id: str) -> dict:

@@ -24,16 +24,16 @@ class AdminService:
     # ── Role management (existing) ─────────────────────────────────────────────
 
     async def update_user_roles(
-        self, user_id: int, roles_ids: list[int], current_admin_id: int
+        self, user_id: int, roles_names: list[str], current_admin_id: int
     ) -> Usuario:
         user_result = await self.session.execute(select(Usuario).where(Usuario.id == user_id))
         user = user_result.scalars().first()
         if not user:
             raise ValueError("User not found")
 
-        roles_result = await self.session.execute(select(Rol).where(Rol.id.in_(roles_ids)))
+        roles_result = await self.session.execute(select(Rol).where(Rol.nombre.in_(roles_names)))
         valid_roles = roles_result.scalars().all()
-        if len(valid_roles) != len(roles_ids):
+        if len(valid_roles) != len(roles_names):
             raise ValueError("One or more roles are invalid")
 
         if user_id == current_admin_id:
@@ -53,8 +53,8 @@ class AdminService:
         for old_role in old_roles_result.scalars().all():
             await self.session.delete(old_role)
 
-        for role_id in roles_ids:
-            self.session.add(UsuarioRol(usuario_id=user_id, rol_id=role_id))
+        for role in valid_roles:
+            self.session.add(UsuarioRol(usuario_id=user_id, rol_id=role.id))
 
         await self.session.flush()
         return user
@@ -99,15 +99,15 @@ class AdminService:
         self.session.add(user)
         await self.session.flush()
 
-        # Assign roles (default: customer if none given)
+        # Assign roles (default: client if none given)
         role_ids = data.roles_ids or []
         if not role_ids:
-            customer_result = await self.session.execute(
-                select(Rol).where(Rol.nombre == "customer")
+            client_result = await self.session.execute(
+                select(Rol).where(Rol.nombre == "client")
             )
-            customer_role = customer_result.scalars().first()
-            if customer_role:
-                role_ids = [customer_role.id]
+            client_role = client_result.scalars().first()
+            if client_role:
+                role_ids = [client_role.id]
 
         for rid in role_ids:
             self.session.add(UsuarioRol(usuario_id=user.id, rol_id=rid))
@@ -138,15 +138,14 @@ class AdminService:
         return user
 
     async def soft_delete_user(self, user_id: int, current_admin_id: int) -> None:
-        """Soft-delete a user (sets deleted_at). Cannot delete yourself."""
+        """Deactivate a user (sets activo = False). Cannot deactivate yourself."""
         if user_id == current_admin_id:
-            raise ValueError("No podés eliminar tu propio usuario.")
+            raise ValueError("No podés desactivar tu propio usuario.")
 
         user = await self.get_user(user_id)
-        if not user or user.deleted_at is not None:
+        if not user:
             raise ValueError("Usuario no encontrado.")
 
-        user.deleted_at = datetime.utcnow()
         user.activo = False
         user.updated_at = datetime.utcnow()
         await self.session.flush()

@@ -42,8 +42,8 @@ export function useUpdateUser() {
 export function useUpdateRoles() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, roles_ids }: { id: number; roles_ids: number[] }) =>
-      adminApi.updateRoles(id, roles_ids),
+    mutationFn: ({ id, roles }: { id: number; roles: string[] }) =>
+      adminApi.updateRoles(id, roles),
     onSuccess: () => qc.invalidateQueries({ queryKey: [ADMIN_USERS_KEY] }),
   })
 }

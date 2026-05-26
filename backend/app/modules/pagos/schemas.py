@@ -20,6 +20,19 @@ class PagoCreatePayload(BaseModel):
     email: str = Field(description="Payer's email")
 
 
+class PreferenciaCreatePayload(BaseModel):
+    """Payload from frontend to create a MercadoPago Checkout Pro Preference."""
+    pedido_id: int
+
+
+class PreferenciaResponse(BaseModel):
+    """Response containing the created preference details."""
+    preference_id: str
+    init_point: str
+    idempotency_key: str
+
+
+
 class WebhookPayload(BaseModel):
     """IPN/Webhook notification body from MercadoPago."""
     action: Optional[str] = None  # e.g. "payment.updated", "payment.created"

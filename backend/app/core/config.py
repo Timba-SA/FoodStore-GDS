@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     MERCADOPAGO_ACCESS_TOKEN: str = ""
     MERCADOPAGO_PUBLIC_KEY: str = ""
     MERCADOPAGO_WEBHOOK_SECRET: str = ""
+    MERCADOPAGO_WEBHOOK_URL: str = ""
 
     # Logging
     LOG_LEVEL: str = "INFO"

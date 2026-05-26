@@ -58,7 +58,15 @@ class PagoService:
         return fp.id
 
     async def _get_pedido(self, pedido_id: int) -> Pedido:
-        result = await self.session.execute(select(Pedido).where(Pedido.id == pedido_id))
+        from sqlalchemy.orm import selectinload
+        result = await self.session.execute(
+            select(Pedido)
+            .options(
+                selectinload(Pedido.detalles_pedido),
+                selectinload(Pedido.usuario)
+            )
+            .where(Pedido.id == pedido_id)
+        )
         pedido = result.scalars().first()
         if not pedido:
             raise ValueError(f"Pedido #{pedido_id} no encontrado.")
@@ -72,6 +80,134 @@ class PagoService:
         return ep.nombre if ep else "desconocido"
 
     # ── Public API ────────────────────────────────────────────────────────────
+
+    async def crear_preferencia(
+        self,
+        pedido_id: int,
+        usuario_id: int,
+    ) -> dict:
+        """
+        Create a payment preference via MercadoPago Checkout Pro API.
+        Returns preference ID and payment links.
+        """
+        from app.core.config import get_settings
+        settings = get_settings()
+
+        # 1. Validate order exists and is PENDIENTE
+        pedido = await self._get_pedido(pedido_id)
+        estado_nombre = await self._get_estado_nombre(pedido.estado_id)
+        if estado_nombre != "pendiente":
+            raise ValueError(
+                f"El pedido no está en estado PENDIENTE (estado actual: {estado_nombre}). "
+                "Solo se puede pagar un pedido PENDIENTE."
+            )
+
+        # 2. Check for already-approved payment
+        result = await self.session.execute(
+            select(Pago).where(
+                Pago.pedido_id == pedido_id,
+                Pago.mp_status == "approved",
+            )
+        )
+        if result.scalars().first():
+            raise ValueError("Este pedido ya tiene un pago aprobado.")
+
+        # 3. Generate reference keys
+        idempotency_key = str(uuid.uuid4())
+        external_reference = f"pedido-{pedido.numero_pedido}"
+
+        # 4. Build line items
+        items = []
+        for d in pedido.detalles_pedido:
+            items.append({
+                "id": str(d.producto_id),
+                "title": d.nombre_snapshot or (d.producto.nombre if d.producto else f"Producto #{d.producto_id}"),
+                "quantity": int(d.cantidad),
+                "unit_price": float(d.precio_unitario),
+                "currency_id": "ARS"
+            })
+
+        # Add shipping cost if positive
+        if pedido.costo_envio > Decimal("0.00"):
+            items.append({
+                "id": "envio",
+                "title": "Costo de envío",
+                "quantity": 1,
+                "unit_price": float(pedido.costo_envio),
+                "currency_id": "ARS"
+            })
+
+        # Base URL de retorno: dynamically use the public ngrok webhook URL if available,
+        # otherwise fallback to localhost. Using secure public URL guarantees that
+        # MercadoPago renders the "Volver al sitio" button and executes auto_return.
+        base_webhook = settings.MERCADOPAGO_WEBHOOK_URL
+        if base_webhook and base_webhook.startswith("http"):
+            base_retorno = base_webhook.replace("/webhook", "/retorno")
+        else:
+            base_retorno = "http://localhost:8000/api/v1/pagos/retorno"
+
+        # 5. Build MP preference payload
+        payer_email = pedido.usuario.email if pedido.usuario else "comprador@foodstore.com"
+        preference_data = {
+            "items": items,
+            "payer": {
+                "email": payer_email,
+            },
+            "back_urls": {
+                "success": f"{base_retorno}?status=success",
+                "failure": f"{base_retorno}?status=failure",
+                "pending": f"{base_retorno}?status=pending",
+            },
+            "auto_return": "approved",
+            "external_reference": external_reference,
+            "metadata": {
+                "pedido_id": pedido.id,
+                "usuario_id": usuario_id
+            }
+        }
+
+        # Inject webhook notification URL only if configured and valid
+        if settings.MERCADOPAGO_WEBHOOK_URL and settings.MERCADOPAGO_WEBHOOK_URL.startswith("http"):
+            preference_data["notification_url"] = settings.MERCADOPAGO_WEBHOOK_URL
+
+        # 6. Call MP SDK to create preference
+        mp_response = await self.mp_client.create_preference(preference_data)
+        mp_body = mp_response.get("response", {})
+        
+        # Check for authentication errors inside preference response
+        http_status = mp_response.get("status", 0)
+        if http_status >= 400:
+            error_msg = mp_body.get("message", "Error al crear la preferencia en MercadoPago.")
+            logger.error(f"MP preference creation error (status {http_status}): {mp_body}")
+            raise ValueError(f"MercadoPago: {error_msg}")
+
+        preference_id = str(mp_body.get("id", ""))
+        init_point = str(mp_body.get("init_point", ""))
+        sandbox_init_point = str(mp_body.get("sandbox_init_point", ""))
+
+        # 7. Save initial pending Pago record linked by reference
+        forma_pago_id = await self._get_forma_pago_mp_id()
+        pago = Pago(
+            pedido_id=pedido.id,
+            forma_pago_id=forma_pago_id,
+            monto=pedido.total,
+            mp_payment_id=None,
+            mp_status="pending",
+            estado="pendiente",
+            idempotency_key=idempotency_key,
+            referencia_externa=external_reference,
+            metadata_pago=json.dumps(mp_body),
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+        self.session.add(pago)
+        await self.session.flush()
+
+        return {
+            "preference_id": preference_id,
+            "init_point": sandbox_init_point or init_point,
+            "idempotency_key": idempotency_key
+        }
 
     async def process_payment(
         self,
@@ -154,14 +290,14 @@ class PagoService:
 
         return pago
 
-    async def _confirm_pedido(self, pedido_id: int, usuario_id: int) -> None:
+    async def _confirm_pedido(self, pedido_id: int, usuario_id: Optional[int] = None) -> None:
         """Advance Pedido FSM to CONFIRMADO (deducts stock atomically)."""
         try:
             pedido_service = PedidoService(self.session)
             await pedido_service.avanzar_estado(
                 pedido_id=pedido_id,
                 nuevo_estado_nombre="confirmado",
-                usuario_id=usuario_id,  # 0 = system
+                usuario_id=usuario_id,  # None = system
                 nota="Pago aprobado por MercadoPago",
             )
             logger.info(f"Pedido #{pedido_id} avanzado a CONFIRMADO por pago MP aprobado.")
@@ -204,6 +340,34 @@ class PagoService:
         )
         pago = result.scalars().first()
 
+        if not pago and external_reference:
+            logger.info(
+                f"Webhook: no local Pago found for mp_payment_id={mp_payment_id}. "
+                f"Attempting search by referencia_externa={external_reference}"
+            )
+            # Prioritize the Pago record that hasn't been associated with an MP ID yet
+            result = await self.session.execute(
+                select(Pago).where(
+                    Pago.referencia_externa == external_reference,
+                    Pago.mp_payment_id == None
+                )
+            )
+            pago = result.scalars().first()
+
+            # Fallback to any Pago with this reference
+            if not pago:
+                result = await self.session.execute(
+                    select(Pago).where(Pago.referencia_externa == external_reference)
+                )
+                pago = result.scalars().first()
+
+            if pago:
+                logger.info(
+                    f"Webhook: found local Pago ID={pago.id} via referencia_externa={external_reference}. "
+                    f"Associating mp_payment_id={mp_payment_id}"
+                )
+                pago.mp_payment_id = mp_payment_id
+
         if not pago:
             logger.warning(
                 f"Webhook: no local Pago found for mp_payment_id={mp_payment_id}. "
@@ -224,7 +388,7 @@ class PagoService:
 
         # If approved: advance Pedido FSM (RN-PA05)
         if mp_status == "approved":
-            await self._confirm_pedido(pago.pedido_id, usuario_id=0)
+            await self._confirm_pedido(pago.pedido_id, usuario_id=None)
 
         logger.info(f"Webhook: Pago #{pago.id} updated to mp_status={mp_status}")
 

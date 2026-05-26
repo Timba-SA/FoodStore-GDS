@@ -10,8 +10,17 @@ export default function ProtectedRoute({
   allowedRoles,
   redirectTo = '/login',
 }: ProtectedRouteProps) {
-  const { isAuthenticated, hasRole } = useAuthStore()
+  const { isAuthenticated, user, hasRole } = useAuthStore()
   const location = useLocation()
+
+  console.log('[ProtectedRoute] Guard Check:', {
+    path: location.pathname,
+    isAuthenticated,
+    userEmail: user?.email,
+    userRoles: user?.roles,
+    allowedRoles,
+    hasRequiredRole: allowedRoles ? hasRole(allowedRoles) : true
+  })
 
   if (!isAuthenticated) {
     return <Navigate to={redirectTo} state={{ from: location }} replace />

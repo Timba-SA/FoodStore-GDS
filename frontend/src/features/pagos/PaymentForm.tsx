@@ -102,7 +102,6 @@ export default function PaymentForm({ pedidoId, onSuccess, onError }: Props) {
                   theme: 'default',
                   customVariables: {
                     baseColor: '#ea580c',
-                    buttonBackground: '#ea580c',
                   },
                 },
               },

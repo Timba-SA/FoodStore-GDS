@@ -28,10 +28,10 @@ export function SoundToggle() {
   return (
     <button
       onClick={handleToggle}
-      className={`relative inline-flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm font-semibold tracking-wide border transition-all duration-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+      className={`relative inline-flex items-center gap-2.5 px-4 py-2 rounded-xl text-sm font-semibold tracking-wide border transition-all duration-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white ${
         enabled
-          ? 'bg-slate-800 text-slate-100 hover:bg-slate-700 border-slate-700/80 focus:ring-slate-500 hover:border-slate-600'
-          : 'bg-rose-950/20 text-rose-400 hover:bg-rose-950/30 border-rose-500/30 focus:ring-rose-500 hover:border-rose-500/40'
+          ? 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200 focus:ring-orange-500 hover:border-slate-300'
+          : 'bg-rose-50 text-rose-600 hover:bg-rose-100/70 border-rose-200 focus:ring-rose-500 hover:border-rose-300'
       }`}
       aria-label={enabled ? 'Mutear alertas de sonido' : 'Activar alertas de sonido'}
       title={enabled ? 'Mutear alertas de sonido' : 'Activar alertas de sonido'}

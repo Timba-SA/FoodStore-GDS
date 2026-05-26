@@ -116,6 +116,11 @@ export const router = createBrowserRouter([
             path: 'admin/usuarios',
             element: <AdminUsuariosPage />,
           },
+        ],
+      },
+      {
+        element: <ProtectedRoute allowedRoles={['admin', 'pedidos']} />,
+        children: [
           {
             path: 'admin/pedidos',
             element: <AdminPedidosPage />,

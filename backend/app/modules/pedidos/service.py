@@ -204,7 +204,7 @@ class PedidoService:
         self,
         pedido_id: int,
         nuevo_estado_nombre: str,
-        usuario_id: int,
+        usuario_id: Optional[int] = None,
         roles: Optional[list[str]] = None,
         nota: Optional[str] = None,
     ) -> Pedido:

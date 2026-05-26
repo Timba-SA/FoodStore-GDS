@@ -11,7 +11,7 @@ from app.core.config import get_settings
 from app.core.middleware import setup_middleware
 from app.core.rate_limit import limiter, rate_limit_exceeded_handler
 from app.modules.auth.router import router as auth_router
-from app.modules.admin.router import router as admin_router
+from app.modules.admin.router import router as admin_router, shared_admin_router
 from app.modules.categorias.router import router as categorias_router
 from app.modules.ingredientes.router import router as ingredientes_router
 from app.modules.productos.router import router as productos_router
@@ -80,6 +80,7 @@ def create_app() -> FastAPI:
     # Include routers
     app.include_router(auth_router, prefix=settings.API_V1_STR)
     app.include_router(admin_router, prefix=settings.API_V1_STR)
+    app.include_router(shared_admin_router, prefix=settings.API_V1_STR)
     app.include_router(categorias_router, prefix=settings.API_V1_STR)
     app.include_router(ingredientes_router, prefix=settings.API_V1_STR)
     app.include_router(productos_router, prefix=settings.API_V1_STR)

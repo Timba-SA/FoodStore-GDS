@@ -12,18 +12,17 @@ import {
   useUpdateRoles,
 } from '@/entities/admin/hooks'
 import type { UsuarioListItem, UsuarioCreate } from '@/entities/admin/types'
+import { useAuthStore } from '@/features/auth/store/authStore'
 
 // Simple role constants — ideally fetched from API
-const AVAILABLE_ROLES = [
-  { id: 1, nombre: 'admin' },
-  { id: 2, nombre: 'customer' },
-  { id: 3, nombre: 'stock' },
-]
+const AVAILABLE_ROLES = ['admin', 'stock', 'pedidos', 'client', 'cocina']
 
 const ROLE_BADGE: Record<string, string> = {
-  admin:    'bg-red-100 text-red-700',
-  customer: 'bg-blue-100 text-blue-700',
-  stock:    'bg-green-100 text-green-700',
+  admin:   'bg-red-50 text-red-700 border border-red-200/60',
+  stock:   'bg-green-50 text-green-700 border border-green-200/60',
+  pedidos: 'bg-amber-50 text-amber-700 border border-amber-200/60',
+  client:  'bg-blue-50 text-blue-700 border border-blue-200/60',
+  cocina:  'bg-purple-50 text-purple-700 border border-purple-200/60',
 }
 
 function UserModal({
@@ -146,6 +145,8 @@ export default function AdminUsuariosPage() {
   const { data: users = [], isLoading } = useAdminUsers()
   const deleteUser = useDeleteUser()
   const updateRoles = useUpdateRoles()
+  const updateUser = useUpdateUser()
+  const currentUser = useAuthStore((s) => s.user)
 
   const [showModal, setShowModal] = useState(false)
   const [editUser, setEditUser] = useState<UsuarioListItem | null>(null)
@@ -157,24 +158,23 @@ export default function AdminUsuariosPage() {
       u.email.toLowerCase().includes(search.toLowerCase()),
   )
 
-  async function handleDelete(id: number) {
-    if (!confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return
-    await deleteUser.mutateAsync(id)
+  async function handleToggleActivo(user: UsuarioListItem) {
+    const nuevoEstado = !user.activo
+    const actionText = nuevoEstado ? 'activar' : 'desactivar'
+    if (!confirm(`¿Estás seguro de que querés ${actionText} a este usuario?`)) return
+
+    if (nuevoEstado) {
+      await updateUser.mutateAsync({ id: user.id, data: { activo: true } })
+    } else {
+      await deleteUser.mutateAsync(user.id)
+    }
   }
 
   async function handleRoleToggle(user: UsuarioListItem, roleName: string) {
-    const role = AVAILABLE_ROLES.find((r) => r.nombre === roleName)
-    if (!role) return
-    const hasRole = user.roles.includes(roleName)
-    const newRoleIds = hasRole
-      ? AVAILABLE_ROLES.filter((r) => user.roles.includes(r.nombre) && r.nombre !== roleName).map(
-          (r) => r.id,
-        )
-      : [
-          ...AVAILABLE_ROLES.filter((r) => user.roles.includes(r.nombre)).map((r) => r.id),
-          role.id,
-        ]
-    await updateRoles.mutateAsync({ id: user.id, roles_ids: newRoleIds })
+    // If the user already has this single role, we do nothing to prevent having 0 roles
+    if (user.roles.length === 1 && user.roles.includes(roleName)) return;
+    // Assign exactly the selected role exclusively (single role rule)
+    await updateRoles.mutateAsync({ id: user.id, roles: [roleName] })
   }
 
   return (
@@ -231,19 +231,19 @@ export default function AdminUsuariosPage() {
                     <td className="px-5 py-3">
                       <div className="flex flex-wrap gap-1.5">
                         {AVAILABLE_ROLES.map((role) => {
-                          const has = u.roles.includes(role.nombre)
+                          const has = u.roles.includes(role)
                           return (
                             <button
-                              key={role.id}
-                              id={`role-${u.id}-${role.nombre}`}
-                              onClick={() => handleRoleToggle(u, role.nombre)}
+                              key={role}
+                              id={`role-${u.id}-${role}`}
+                              onClick={() => handleRoleToggle(u, role)}
                               className={`text-xs font-semibold px-2 py-0.5 rounded-full transition ${
                                 has
-                                  ? ROLE_BADGE[role.nombre] ?? 'bg-gray-100 text-gray-700'
+                                  ? ROLE_BADGE[role] ?? 'bg-gray-100 text-gray-700'
                                   : 'bg-gray-50 text-gray-400 border border-dashed border-gray-300'
                               }`}
                             >
-                              {role.nombre}
+                              {role}
                             </button>
                           )
                         })}
@@ -267,13 +267,17 @@ export default function AdminUsuariosPage() {
                         >
                           Editar
                         </button>
-                        <button
-                          id={`btn-delete-${u.id}`}
-                          onClick={() => handleDelete(u.id)}
-                          className="text-xs text-red-500 hover:underline font-semibold"
-                        >
-                          Eliminar
-                        </button>
+                        {currentUser?.id !== u.id && (
+                          <button
+                            id={`btn-toggle-active-${u.id}`}
+                            onClick={() => handleToggleActivo(u)}
+                            className={`text-xs hover:underline font-semibold ${
+                              u.activo ? 'text-red-500' : 'text-green-600'
+                            }`}
+                          >
+                            {u.activo ? 'Desactivar' : 'Activar'}
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

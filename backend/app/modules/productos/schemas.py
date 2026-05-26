@@ -126,6 +126,7 @@ class ProductoResponse(BaseModel):
     sku: str
     imagen_url: Optional[str]
     activo: bool
+    disponible: bool
     es_alergeno: bool
     deleted_at: Optional[datetime]
     created_at: datetime

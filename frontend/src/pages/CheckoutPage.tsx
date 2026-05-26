@@ -11,8 +11,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { usePedido } from '@/entities/pedido/hooks'
-import { usePagosByPedido } from '@/entities/pago/hooks'
-import PaymentForm from '@/features/pagos/PaymentForm'
+import { usePagosByPedido, useCrearPreferencia } from '@/entities/pago/hooks'
 import type { PagoResponse } from '@/entities/pago/types'
 
 const MP_STATUS_INFO: Record<string, { label: string; icon: string; color: string }> = {
@@ -32,18 +31,22 @@ export default function CheckoutPage() {
   const [lastPago, setLastPago] = useState<PagoResponse | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  // Check if an approved payment already exists (from poll or last submit)
+  const crearPreferencia = useCrearPreferencia()
+
   const approvedPago = pagos.find((p) => p.mp_status === 'approved')
   const isConfirmed = pedido?.estado_nombre === 'confirmado' || !!approvedPago
 
-  function handleSuccess(pago: PagoResponse) {
-    setLastPago(pago)
+  const handlePay = () => {
     setErrorMsg(null)
-  }
-
-  function handleError(msg: string) {
-    setErrorMsg(msg)
-    setLastPago(null)
+    crearPreferencia.mutate(pedidoId, {
+      onSuccess: (data) => {
+        window.location.href = data.init_point
+      },
+      onError: (err: any) => {
+        const detail = err?.response?.data?.detail || 'Error al conectar con Mercado Pago. Intentá de nuevo.'
+        setErrorMsg(detail)
+      }
+    })
   }
 
   if (isLoading) {
@@ -117,12 +120,32 @@ export default function CheckoutPage() {
             </button>
           </div>
         ) : (
-          /* Payment form */
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
-            <h2 className="text-lg font-bold text-gray-900">Datos de pago</h2>
-            <p className="text-xs text-gray-400">
-              🔒 Tus datos de tarjeta son procesados directamente por MercadoPago de forma segura.
-            </p>
+          /* Checkout Pro Button Form */
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 space-y-6">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⚡</span>
+              <div>
+                <h2 className="text-lg font-bold text-slate-800">Checkout de Pago</h2>
+                <p className="text-xs text-slate-400">
+                  Vas a ser redirigido de forma segura al portal oficial de Mercado Pago.
+                </p>
+              </div>
+            </div>
+
+            {/* Total amount summary card */}
+            <div className="bg-gradient-to-br from-orange-50/40 to-amber-50/20 border border-orange-100/60 rounded-2xl p-5 flex justify-between items-center shadow-[0_2px_15px_rgba(245,158,11,0.02)]">
+              <div className="space-y-1">
+                <span className="text-xs font-semibold text-orange-800 uppercase tracking-wider">
+                  Total a abonar
+                </span>
+                <p className="text-xs font-medium text-slate-500">
+                  Pedido {pedido.numero_pedido}
+                </p>
+              </div>
+              <span className="text-2xl font-extrabold text-orange-600">
+                ${parseFloat(pedido.total).toFixed(2)}
+              </span>
+            </div>
 
             {/* Last payment status badge */}
             {lastPago && lastPago.mp_status && (
@@ -137,25 +160,47 @@ export default function CheckoutPage() {
 
             {/* Error message */}
             {errorMsg && (
-              <div className="border border-red-200 bg-red-50 rounded-xl px-4 py-3 text-sm text-red-700">
-                {errorMsg}
+              <div className="border border-red-200 bg-red-50 rounded-xl px-4 py-3 text-sm text-red-700 flex justify-between items-center">
+                <span>{errorMsg}</span>
                 <button
                   onClick={() => setErrorMsg(null)}
-                  className="ml-2 underline hover:no-underline"
+                  className="underline hover:no-underline font-semibold ml-2"
                 >
                   Reintentar
                 </button>
               </div>
             )}
 
-            {/* Show form if last attempt wasn't approved */}
-            {(!lastPago || lastPago.mp_status !== 'approved') && (
-              <PaymentForm
-                pedidoId={pedidoId}
-                onSuccess={handleSuccess}
-                onError={handleError}
-              />
-            )}
+            {/* Checkout Pro Redirection Button */}
+            <div className="space-y-4">
+              <button
+                type="button"
+                disabled={crearPreferencia.isPending}
+                onClick={handlePay}
+                className="w-full bg-[#009ee3] hover:bg-[#008cc9] active:scale-[0.99] text-white font-bold py-3.5 px-6 rounded-2xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:pointer-events-none"
+              >
+                {crearPreferencia.isPending ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Conectando con Mercado Pago...
+                  </>
+                ) : (
+                  <>
+                    <span>Pagar con Mercado Pago</span>
+                    <span className="text-lg">⚡</span>
+                  </>
+                )}
+              </button>
+
+              <div className="text-center">
+                <span className="text-[10px] text-slate-400 font-medium tracking-wide uppercase">
+                  🔒 Transacción procesada de forma externa y segura
+                </span>
+              </div>
+            </div>
           </div>
         )}
 

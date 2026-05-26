@@ -28,8 +28,8 @@ export const adminApi = {
   updateUser: (id: number, data: UsuarioUpdate): Promise<User> =>
     client.put(`/admin/usuarios/${id}`, data).then(d) as Promise<User>,
 
-  updateRoles: (id: number, roles_ids: number[]): Promise<User> =>
-    client.put(`/admin/usuarios/${id}/roles`, { roles_ids }).then(d) as Promise<User>,
+  updateRoles: (id: number, roles: string[]): Promise<User> =>
+    client.put(`/admin/usuarios/${id}/roles`, { roles }).then(d) as Promise<User>,
 
   deleteUser: (id: number): Promise<{ message: string }> =>
     client.delete(`/admin/usuarios/${id}`).then(d) as Promise<{ message: string }>,

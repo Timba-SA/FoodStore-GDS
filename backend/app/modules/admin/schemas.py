@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, EmailStr
 
 # ─── Existing ──────────────────────────────────────────────────────────────────
 class UpdateRolesRequest(BaseModel):
-    roles_ids: list[int] = Field(..., description="List of role IDs to assign to the user")
+    roles: list[str] = Field(..., description="List of role names to assign to the user")
 
 
 # ─── User Management ───────────────────────────────────────────────────────────

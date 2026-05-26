@@ -28,6 +28,7 @@ export default function CatalogoPage() {
     sin_alergenos: sinAlergenos || undefined,
     min_price: minPrice ? parseFloat(minPrice) : undefined,
     max_price: maxPrice ? parseFloat(maxPrice) : undefined,
+    only_available: true,
   }
 
   const { data: productos = [], isLoading, isError } = useProductos(filters)

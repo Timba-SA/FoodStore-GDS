@@ -30,3 +30,14 @@ export function useProcessPayment() {
     },
   })
 }
+
+export function useCrearPreferencia() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (pedidoId: number) => pagoApi.crearPreferencia(pedidoId),
+    onSuccess: (_data, pedidoId) => {
+      queryClient.invalidateQueries({ queryKey: [PAGOS_KEY, pedidoId] })
+      queryClient.invalidateQueries({ queryKey: [PEDIDOS_KEY] })
+    },
+  })
+}

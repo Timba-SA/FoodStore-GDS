@@ -36,6 +36,12 @@ router = APIRouter(
     dependencies=[Depends(require_role(["admin"]))],
 )
 
+shared_admin_router = APIRouter(
+    prefix="/admin",
+    tags=["admin-shared"],
+    dependencies=[Depends(require_role(["admin", "pedidos"]))],
+)
+
 
 # ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -157,7 +163,7 @@ async def update_user_roles(
         svc = AdminService(session)
         user = await svc.update_user_roles(
             user_id=user_id,
-            roles_ids=request.roles_ids,
+            roles_names=request.roles,
             current_admin_id=current_admin.id,
         )
         await session.commit()
@@ -187,7 +193,7 @@ async def update_user_roles(
 @router.delete(
     "/usuarios/{user_id}",
     status_code=status.HTTP_200_OK,
-    summary="Soft-delete user",
+    summary="Deactivate user",
 )
 async def delete_user(
     user_id: int,
@@ -198,7 +204,7 @@ async def delete_user(
     try:
         await svc.soft_delete_user(user_id, current_admin_id=current_admin.id)
         await session.commit()
-        return {"message": "Usuario eliminado correctamente."}
+        return {"message": "Usuario desactivado correctamente."}
     except ValueError as exc:
         await session.rollback()
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
@@ -265,7 +271,7 @@ async def registros_eliminados(session: AsyncSession = Depends(get_db)):
 
 # ─── Admin Pedidos ─────────────────────────────────────────────────────────────
 
-@router.get(
+@shared_admin_router.get(
     "/pedidos",
     summary="List all orders (admin view, filterable by estado)",
 )

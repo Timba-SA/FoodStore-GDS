@@ -102,6 +102,7 @@ class ProductoService:
         self,
         *,
         include_inactive: bool = False,
+        only_available: bool = False,
         search: Optional[str] = None,
         categoria_id: Optional[int] = None,
         min_price: Optional[Decimal] = None,
@@ -117,6 +118,9 @@ class ProductoService:
                 Producto.deleted_at.is_(None),
                 Producto.activo.is_(True),
             )
+
+        if only_available:
+            stmt = stmt.where(Producto.disponible.is_(True))
 
         if search:
             stmt = stmt.where(Producto.nombre.ilike(f"%{search.strip()}%"))

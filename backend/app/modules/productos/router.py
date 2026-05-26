@@ -41,6 +41,7 @@ def _to_response(producto) -> ProductoResponse:
         sku=producto.sku,
         imagen_url=producto.imagen_url,
         activo=producto.activo,
+        disponible=producto.disponible,
         es_alergeno=producto.es_alergeno,
         deleted_at=producto.deleted_at,
         created_at=producto.created_at,
@@ -71,6 +72,7 @@ async def list_productos(
     max_price: Optional[Decimal] = Query(default=None, ge=0, description="Max price"),
     sin_alergenos: bool = Query(default=False, description="Exclude products with allergens"),
     include_inactive: bool = Query(default=False, description="Include inactive/deleted (requires ADMIN/STOCK)"),
+    only_available: bool = Query(default=False, description="Filter only available products (used for public catalog)"),
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=200),
     session: AsyncSession = Depends(get_db),
@@ -84,6 +86,7 @@ async def list_productos(
     service = ProductoService(session)
     productos = await service.get_all(
         include_inactive=include_inactive if can_see_inactive else False,
+        only_available=only_available,
         search=search,
         categoria_id=categoria_id,
         min_price=min_price,

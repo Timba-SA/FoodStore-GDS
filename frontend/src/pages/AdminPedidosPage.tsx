@@ -31,12 +31,14 @@ const ESTADO_BADGE: Record<string, string> = {
 }
 
 const NEXT_STATE: Record<string, string> = {
+  pendiente:      'confirmado',
   confirmado:     'en_preparacion',
   en_preparacion: 'en_camino',
   en_camino:      'entregado',
 }
 
 const NEXT_LABEL: Record<string, string> = {
+  pendiente:      '👨‍🍳 Mandar a Cocina',
   confirmado:     '👨‍🍳 Preparando',
   en_preparacion: '🚚 En camino',
   en_camino:      '✅ Entregado',

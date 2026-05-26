@@ -24,6 +24,7 @@ export interface Producto {
   sku: string
   imagen_url: string | null
   activo: boolean
+  disponible: boolean
   es_alergeno: boolean
   deleted_at: string | null
   created_at: string
@@ -70,6 +71,7 @@ export interface ProductosFilters {
   max_price?: number
   sin_alergenos?: boolean
   include_inactive?: boolean
+  only_available?: boolean
   skip?: number
   limit?: number
 }
